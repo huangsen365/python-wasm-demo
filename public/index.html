@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python WASM CLI Demo</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+        }
+        #terminal {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #000;
+            border: 2px solid #333;
+            border-radius: 5px;
+            padding: 10px;
+            height: 500px;
+            overflow-y: auto;
+        }
+        #output {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        #input-line {
+            display: flex;
+            margin-top: 10px;
+        }
+        #prompt {
+            color: #4ec9b0;
+            margin-right: 5px;
+        }
+        #input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #d4d4d4;
+            font-family: inherit;
+            font-size: inherit;
+            outline: none;
+        }
+        .loading {
+            color: #dcdcaa;
+        }
+        .error {
+            color: #f44747;
+        }
+        .success {
+            color: #4ec9b0;
+        }
+    </style>
+</head>
+<body>
+    <h1 style="text-align: center; color: #4ec9b0;">Python WASM CLI Demo</h1>
+    <div style="text-align: center; margin-bottom: 20px;">
+        <a href="editor.html" style="color: #4ec9b0; text-decoration: none; font-size: 18px;">
+            ▶ Try the Full Online IDE with Code Editor
+        </a>
+    </div>
+    <div id="terminal">
+        <div id="output">
+            <div class="loading">Loading Python environment...</div>
+        </div>
+        <div id="input-line" style="display: none;">
+            <span id="prompt">&gt;&gt;&gt;</span>
+            <input type="text" id="input" autofocus>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+    <script>
+        let pyodide;
+        const output = document.getElementById('output');
+        const input = document.getElementById('input');
+        const inputLine = document.getElementById('input-line');
+
+        function addOutput(text, className = '') {
+            const line = document.createElement('div');
+            line.textContent = text;
+            if (className) line.className = className;
+            output.appendChild(line);
+            output.scrollTop = output.scrollHeight;
+        }
+
+        async function initPython() {
+            try {
+                pyodide = await loadPyodide({
+                    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.24.1/full/"
+                });
+                
+                // Set up stdout/stderr capture
+                pyodide.runPython(`
+                    import sys
+                    import io
+                    from js import console
+                    
+                    class JSConsole:
+                        def write(self, text):
+                            console.log(text)
+                            return len(text)
+                        
+                        def flush(self):
+                            pass
+                    
+                    sys.stdout = JSConsole()
+                    sys.stderr = JSConsole()
+                `);
+
+                // Override console.log to display in terminal
+                const originalLog = console.log;
+                console.log = function(text) {
+                    if (text && text.trim()) {
+                        addOutput(text);
+                    }
+                    originalLog.apply(console, arguments);
+                };
+
+                addOutput('Python environment loaded successfully!', 'success');
+                addOutput('Python ' + pyodide.runPython('import sys; sys.version'));
+                addOutput('Type Python code and press Enter to execute.');
+                addOutput('');
+                
+                inputLine.style.display = 'flex';
+                input.focus();
+            } catch (error) {
+                addOutput('Error loading Python: ' + error.message, 'error');
+            }
+        }
+
+        async function executePython(code) {
+            addOutput('>>> ' + code);
+            
+            try {
+                // Handle special commands
+                if (code.trim() === 'clear') {
+                    output.innerHTML = '';
+                    return;
+                }
+                
+                if (code.trim() === 'help') {
+                    addOutput('Available commands:');
+                    addOutput('  - Any valid Python code');
+                    addOutput('  - clear: Clear the terminal');
+                    addOutput('  - help: Show this help message');
+                    return;
+                }
+                
+                // Execute Python code
+                let result = await pyodide.runPythonAsync(code);
+                if (result !== undefined && result !== null) {
+                    addOutput(String(result));
+                }
+            } catch (error) {
+                addOutput(error.message, 'error');
+            }
+        }
+
+        input.addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter') {
+                const code = input.value.trim();
+                if (code) {
+                    input.value = '';
+                    await executePython(code);
+                }
+            }
+        });
+
+        // Initialize Python when page loads
+        initPython();
+    </script>
+</body>
+</html>

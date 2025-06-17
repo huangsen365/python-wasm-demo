@@ -1,0 +1,1593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Python Online IDE</title>
+    <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/editor/editor.main.css">
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #header {
+            background-color: #2d2d30;
+            padding: 10px 20px;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            border-bottom: 1px solid #3e3e42;
+        }
+
+        #header h1 {
+            font-size: 20px;
+            font-weight: normal;
+            color: #cccccc;
+        }
+
+        .toolbar {
+            display: flex;
+            gap: 10px;
+            margin-left: auto;
+        }
+
+        .btn {
+            background-color: #0e639c;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        .btn:hover {
+            background-color: #1177bb;
+        }
+
+        .btn:disabled {
+            background-color: #3e3e42;
+            cursor: not-allowed;
+        }
+
+        .btn-success {
+            background-color: #4ec9b0;
+        }
+
+        .btn-success:hover {
+            background-color: #3ca08a;
+        }
+
+        #main-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        #sidebar {
+            width: 200px;
+            background-color: #252526;
+            border-right: 1px solid #3e3e42;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #file-explorer {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .file-tree {
+            list-style: none;
+        }
+
+        .file-item {
+            padding: 4px 8px;
+            cursor: pointer;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            user-select: none;
+        }
+
+        .file-item:hover {
+            background-color: #2a2d2e;
+        }
+
+        .file-item.active {
+            background-color: #094771;
+        }
+
+        .file-icon {
+            width: 16px;
+            height: 16px;
+            display: inline-block;
+        }
+
+        #content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #tabs {
+            background-color: #2d2d30;
+            display: flex;
+            border-bottom: 1px solid #3e3e42;
+            overflow-x: auto;
+        }
+
+        .tab {
+            padding: 8px 16px;
+            cursor: pointer;
+            border-right: 1px solid #3e3e42;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+        }
+
+        .tab:hover {
+            background-color: #323233;
+        }
+
+        .tab.active {
+            background-color: #1e1e1e;
+            border-bottom: 2px solid #007acc;
+        }
+
+        .tab-close {
+            margin-left: 5px;
+            cursor: pointer;
+            opacity: 0.6;
+        }
+
+        .tab-close:hover {
+            opacity: 1;
+        }
+
+        #editor-container {
+            flex: 1;
+            display: flex;
+        }
+
+        #editor {
+            flex: 1;
+        }
+
+        #terminal-container {
+            width: 40%;
+            background-color: #1e1e1e;
+            border-left: 1px solid #3e3e42;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #terminal-header {
+            background-color: #2d2d30;
+            padding: 8px 12px;
+            border-bottom: 1px solid #3e3e42;
+            font-size: 14px;
+        }
+
+        #terminal {
+            flex: 1;
+            padding: 10px;
+            overflow-y: auto;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 14px;
+        }
+
+        #terminal-output {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        #terminal-input-line {
+            display: flex;
+            margin-top: 10px;
+        }
+
+        #terminal-prompt {
+            color: #4ec9b0;
+            margin-right: 5px;
+        }
+
+        #terminal-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: #d4d4d4;
+            font-family: inherit;
+            font-size: inherit;
+            outline: none;
+        }
+
+        .loading {
+            color: #dcdcaa;
+        }
+
+        .error {
+            color: #f44747;
+        }
+
+        .success {
+            color: #4ec9b0;
+        }
+
+        .output {
+            color: #cccccc;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+
+        .modal-content {
+            background-color: #2d2d30;
+            margin: 20% auto;
+            padding: 20px;
+            border: 1px solid #3e3e42;
+            width: 300px;
+            border-radius: 5px;
+        }
+
+        .modal-content input {
+            width: 100%;
+            padding: 8px;
+            margin: 10px 0;
+            background-color: #1e1e1e;
+            border: 1px solid #3e3e42;
+            color: #d4d4d4;
+            border-radius: 3px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 15px;
+        }
+
+        .resize-handle {
+            width: 5px;
+            background-color: #3e3e42;
+            cursor: col-resize;
+            position: relative;
+        }
+
+        .resize-handle:hover {
+            background-color: #007acc;
+        }
+    </style>
+</head>
+<body>
+    <div id="header">
+        <h1>Python Online IDE</h1>
+        <div class="toolbar">
+            <button class="btn" onclick="newFile()">New File</button>
+            <button class="btn" onclick="saveFile()">Save</button>
+            <button class="btn btn-success" onclick="runCode()">▶ Run</button>
+            <button class="btn" onclick="clearTerminal()">Clear Terminal</button>
+        </div>
+    </div>
+
+    <div id="main-container">
+        <div id="sidebar">
+            <div id="file-explorer">
+                <h3 style="margin-bottom: 10px; font-size: 14px;">FILES</h3>
+                <ul id="file-tree" class="file-tree"></ul>
+            </div>
+        </div>
+
+        <div id="content">
+            <div id="tabs"></div>
+            <div id="editor-container">
+                <div id="editor"></div>
+                <div class="resize-handle" id="resize-handle"></div>
+                <div id="terminal-container">
+                    <div id="terminal-header">TERMINAL</div>
+                    <div id="terminal">
+                        <div id="terminal-output">
+                            <div class="loading">Loading Python environment...</div>
+                        </div>
+                        <div id="terminal-input-line" style="display: none;">
+                            <span id="terminal-prompt">&gt;&gt;&gt;</span>
+                            <input type="text" id="terminal-input" autofocus>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New File Modal -->
+    <div id="newFileModal" class="modal">
+        <div class="modal-content">
+            <h3>New File</h3>
+            <input type="text" id="newFileName" placeholder="filename.py">
+            <div class="modal-buttons">
+                <button class="btn" onclick="closeModal()">Cancel</button>
+                <button class="btn btn-success" onclick="createFile()">Create</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+    <script>
+        let pyodide;
+        let editor;
+        let currentFile = null;
+        let files = new Map();
+        let openTabs = [];
+        let maxTerminalLines = 1000; // Limit terminal history
+        let maxOpenTabs = 5; // Limit open tabs
+
+        // Terminal elements
+        const terminalOutput = document.getElementById('terminal-output');
+        const terminalInput = document.getElementById('terminal-input');
+        const terminalInputLine = document.getElementById('terminal-input-line');
+
+        // Example file templates (loaded on demand)
+        const exampleTemplates = {
+                '01_hello_world.py': `# Python Basics - Hello World
+# This is your first Python program!
+
+print("Hello, World!")
+print("Welcome to Python programming!")
+
+# Try changing the text inside the quotes and run again
+name = "Python Learner"
+print(f"Hello, {name}!")
+
+# Python can do math too!
+print(f"2 + 2 = {2 + 2}")
+`,
+
+                '02_variables.py': `# Variables and Data Types
+# Python has different types of data
+
+# Numbers
+age = 25                    # Integer
+height = 5.9               # Float (decimal)
+print(f"Age: {age}, Height: {height}")
+
+# Strings (text)
+first_name = "John"
+last_name = "Doe"
+full_name = first_name + " " + last_name
+print(f"Full name: {full_name}")
+
+# Booleans (True/False)
+is_student = True
+is_working = False
+print(f"Student: {is_student}, Working: {is_working}")
+
+# Type checking
+print(f"Type of age: {type(age)}")
+print(f"Type of height: {type(height)}")
+print(f"Type of name: {type(first_name)}")
+`,
+
+                '03_lists.py': `# Lists - Python's Arrays
+# Lists can store multiple items
+
+# Creating lists
+fruits = ["apple", "banana", "orange", "grape"]
+numbers = [1, 2, 3, 4, 5]
+mixed = [1, "hello", 3.14, True]
+
+print("Fruits:", fruits)
+print("First fruit:", fruits[0])
+print("Last fruit:", fruits[-1])
+
+# Adding items
+fruits.append("mango")
+print("After adding mango:", fruits)
+
+# Removing items
+fruits.remove("banana")
+print("After removing banana:", fruits)
+
+# List operations
+print(f"Number of fruits: {len(fruits)}")
+print(f"Is 'apple' in fruits? {'apple' in fruits}")
+
+# Slicing
+print("First two fruits:", fruits[:2])
+print("Last two fruits:", fruits[-2:])
+
+# Looping through lists
+print("\\nAll fruits:")
+for fruit in fruits:
+    print(f"  - {fruit}")
+`,
+
+                '04_dictionaries.py': `# Dictionaries - Key-Value Pairs
+# Dictionaries store data with labels
+
+# Creating a dictionary
+person = {
+    "name": "Alice",
+    "age": 30,
+    "city": "New York",
+    "hobbies": ["reading", "coding", "hiking"]
+}
+
+print("Person info:", person)
+print("Name:", person["name"])
+print("Age:", person["age"])
+
+# Adding/updating values
+person["email"] = "alice@example.com"
+person["age"] = 31
+print("\\nUpdated person:", person)
+
+# Dictionary methods
+print("\\nAll keys:", person.keys())
+print("All values:", person.values())
+
+# Checking if key exists
+if "hobbies" in person:
+    print("\\nHobbies:")
+    for hobby in person["hobbies"]:
+        print(f"  - {hobby}")
+
+# Nested dictionary
+students = {
+    "student1": {"name": "Bob", "grade": 85},
+    "student2": {"name": "Carol", "grade": 92}
+}
+
+for student_id, info in students.items():
+    print(f"\\n{student_id}: {info['name']} - Grade: {info['grade']}")
+`,
+
+                '05_control_flow.py': `# Control Flow - Making Decisions
+# if, elif, else statements
+
+# Simple if statement
+age = 18
+if age >= 18:
+    print("You are an adult")
+else:
+    print("You are a minor")
+
+# Multiple conditions
+score = 85
+if score >= 90:
+    grade = "A"
+elif score >= 80:
+    grade = "B"
+elif score >= 70:
+    grade = "C"
+else:
+    grade = "F"
+print(f"Score: {score}, Grade: {grade}")
+
+# Combining conditions
+temperature = 75
+is_sunny = True
+
+if temperature > 70 and is_sunny:
+    print("Perfect day for a picnic!")
+elif temperature > 70 and not is_sunny:
+    print("Warm but cloudy")
+else:
+    print("Maybe stay inside")
+
+# Using 'in' operator
+favorite_colors = ["blue", "green", "red"]
+user_color = "blue"
+
+if user_color in favorite_colors:
+    print(f"{user_color} is one of my favorite colors!")
+`,
+
+                '06_loops.py': `# Loops - Repeating Actions
+# for and while loops
+
+# For loop with range
+print("Counting to 5:")
+for i in range(1, 6):
+    print(f"  Count: {i}")
+
+# For loop with list
+colors = ["red", "green", "blue", "yellow"]
+print("\\nColors:")
+for color in colors:
+    print(f"  - {color.upper()}")
+
+# Enumerate for index and value
+print("\\nColors with index:")
+for index, color in enumerate(colors):
+    print(f"  {index}: {color}")
+
+# While loop
+print("\\nCountdown:")
+count = 5
+while count > 0:
+    print(f"  {count}...")
+    count -= 1
+print("  Blast off! 🚀")
+
+# Break and continue
+print("\\nFind the first even number:")
+for num in [1, 3, 5, 6, 7, 8]:
+    if num % 2 == 0:
+        print(f"  Found: {num}")
+        break
+
+# List comprehension
+squares = [x**2 for x in range(1, 6)]
+print(f"\\nSquares: {squares}")
+`,
+
+                '07_functions.py': `# Functions - Reusable Code Blocks
+
+# Simple function
+def greet(name):
+    """This function greets a person"""
+    return f"Hello, {name}!"
+
+message = greet("Alice")
+print(message)
+
+# Function with multiple parameters
+def calculate_area(length, width):
+    """Calculate the area of a rectangle"""
+    area = length * width
+    return area
+
+room_area = calculate_area(10, 12)
+print(f"Room area: {room_area} sq ft")
+
+# Default parameters
+def introduce(name, age=0, city="Unknown"):
+    """Introduce a person with optional details"""
+    intro = f"Hi, I'm {name}"
+    if age > 0:
+        intro += f", I'm {age} years old"
+    if city != "Unknown":
+        intro += f", from {city}"
+    return intro + "."
+
+print(introduce("Bob"))
+print(introduce("Carol", 25))
+print(introduce("David", 30, "Boston"))
+
+# Function returning multiple values
+def get_min_max(numbers):
+    """Return both minimum and maximum"""
+    return min(numbers), max(numbers)
+
+nums = [5, 2, 8, 1, 9]
+minimum, maximum = get_min_max(nums)
+print(f"\\nMin: {minimum}, Max: {maximum}")
+
+# Lambda functions (one-line functions)
+square = lambda x: x**2
+print(f"\\nSquare of 5: {square(5)}")
+
+# Using functions with map
+numbers = [1, 2, 3, 4, 5]
+squared = list(map(lambda x: x**2, numbers))
+print(f"Squared numbers: {squared}")
+`,
+
+                '08_classes.py': `# Classes - Object-Oriented Programming
+# Creating custom data types
+
+# Define a class
+class Dog:
+    """A simple Dog class"""
+    
+    def __init__(self, name, age, breed):
+        """Initialize dog attributes"""
+        self.name = name
+        self.age = age
+        self.breed = breed
+    
+    def bark(self):
+        """Make the dog bark"""
+        return f"{self.name} says: Woof!"
+    
+    def describe(self):
+        """Describe the dog"""
+        return f"{self.name} is a {self.age} year old {self.breed}"
+    
+    def birthday(self):
+        """Celebrate birthday"""
+        self.age += 1
+        return f"Happy birthday {self.name}! Now {self.age} years old!"
+
+# Create instances
+my_dog = Dog("Buddy", 3, "Golden Retriever")
+print(my_dog.describe())
+print(my_dog.bark())
+print(my_dog.birthday())
+
+# Another example - Bank Account
+class BankAccount:
+    """A simple bank account class"""
+    
+    def __init__(self, owner, balance=0):
+        self.owner = owner
+        self.balance = balance
+    
+    def deposit(self, amount):
+        self.balance += amount
+        return f"Deposited ${amount}. New balance: ${self.balance}"
+    
+    def withdraw(self, amount):
+        if amount <= self.balance:
+            self.balance -= amount
+            return f"Withdrew ${amount}. New balance: ${self.balance}"
+        return "Insufficient funds!"
+    
+    def __str__(self):
+        return f"{self.owner}'s account: ${self.balance}"
+
+# Using the BankAccount
+account = BankAccount("Alice", 1000)
+print(account)
+print(account.deposit(500))
+print(account.withdraw(200))
+print(account)
+`,
+
+                '09_errors.py': `# Error Handling - Dealing with Problems
+# Using try, except, finally
+
+# Basic error handling
+def divide(a, b):
+    try:
+        result = a / b
+        return f"{a} / {b} = {result}"
+    except ZeroDivisionError:
+        return "Error: Cannot divide by zero!"
+    except TypeError:
+        return "Error: Please provide numbers only!"
+
+print(divide(10, 2))
+print(divide(10, 0))
+print(divide(10, "two"))
+
+# Multiple error types
+def get_list_item(lst, index):
+    try:
+        return f"Item at index {index}: {lst[index]}"
+    except IndexError:
+        return f"Error: Index {index} is out of range!"
+    except TypeError:
+        return "Error: Invalid index type!"
+
+my_list = ["apple", "banana", "orange"]
+print(get_list_item(my_list, 1))
+print(get_list_item(my_list, 10))
+print(get_list_item(my_list, "one"))
+
+# Using finally
+def read_number():
+    try:
+        num = int(input("Enter a number: "))
+        print(f"You entered: {num}")
+    except ValueError:
+        print("That's not a valid number!")
+    finally:
+        print("Thanks for using the program!")
+
+# Custom exceptions
+class TooYoungError(Exception):
+    pass
+
+def check_age(age):
+    if age < 0:
+        raise ValueError("Age cannot be negative!")
+    elif age < 18:
+        raise TooYoungError("Must be 18 or older!")
+    else:
+        return "Access granted!"
+
+# Test custom exception
+ages = [25, 15, -5, 30]
+for age in ages:
+    try:
+        print(f"Age {age}: {check_age(age)}")
+    except (ValueError, TooYoungError) as e:
+        print(f"Age {age}: {e}")
+`,
+
+                '10_modules.py': `# Using Python Modules
+# Import and use built-in libraries
+
+# Math module
+import math
+
+print("Math operations:")
+print(f"Pi: {math.pi}")
+print(f"Square root of 16: {math.sqrt(16)}")
+print(f"Ceiling of 4.3: {math.ceil(4.3)}")
+print(f"Floor of 4.7: {math.floor(4.7)}")
+
+# Random module
+import random
+
+print("\\nRandom operations:")
+print(f"Random number 1-10: {random.randint(1, 10)}")
+print(f"Random float 0-1: {random.random()}")
+
+fruits = ["apple", "banana", "orange", "grape"]
+print(f"Random fruit: {random.choice(fruits)}")
+
+# Shuffle a list
+numbers = [1, 2, 3, 4, 5]
+random.shuffle(numbers)
+print(f"Shuffled numbers: {numbers}")
+
+# Datetime module
+from datetime import datetime, timedelta
+
+print("\\nDate and time:")
+now = datetime.now()
+print(f"Current time: {now}")
+print(f"Today's date: {now.date()}")
+print(f"Current time: {now.time()}")
+
+# Date arithmetic
+tomorrow = now + timedelta(days=1)
+print(f"Tomorrow: {tomorrow.date()}")
+
+# Formatting dates
+print(f"Formatted: {now.strftime('%B %d, %Y at %I:%M %p')}")
+
+# String operations
+import string
+
+print("\\nString module:")
+print(f"Lowercase letters: {string.ascii_lowercase}")
+print(f"Digits: {string.digits}")
+print(f"Punctuation: {string.punctuation}")
+
+# Creating a random password
+chars = string.ascii_letters + string.digits
+password = ''.join(random.choice(chars) for _ in range(8))
+print(f"Random password: {password}")
+`,
+
+                'welcome.py': `# Welcome to Python Online IDE! 🐍
+# 
+# This is an interactive Python learning environment.
+# Click on any example file on the left to learn Python concepts!
+# 
+# Quick Start:
+# 1. Browse example files in the sidebar (01_hello_world.py to 10_modules.py)
+# 2. Click on a file to open it
+# 3. Read the comments to understand the concepts
+# 4. Press the green "Run" button to execute the code
+# 5. See the output in the terminal on the right
+# 6. Try modifying the code and run again!
+# 
+# Tips:
+# - You can create new files with the "New File" button
+# - The terminal also accepts direct Python commands
+# - Type "clear" in the terminal to clear the output
+# - All your code runs safely in your browser
+# 
+# Let's start with a simple example:
+
+print("🎉 Welcome to Python!")
+print("Your learning journey begins here!")
+
+# Your turn! Try these:
+# 1. Change the welcome message above
+# 2. Add your name to the print statement
+# 3. Click Run to see your changes!
+
+name = "YOUR_NAME"  # Change this!
+print(f"Happy coding, {name}! 🚀")
+`
+            };
+
+            // Load all example files
+            for (const [filename, content] of Object.entries(examples)) {
+                files.set(filename, content);
+            }
+
+            // Open the welcome file first
+            currentFile = 'welcome.py';
+            files.set(currentFile, examples[currentFile]);
+            openTabs.push(currentFile);
+            editor.setValue(files.get(currentFile));
+            
+            updateTabs();
+            updateFileTree();
+        }
+
+        // Initialize Monaco Editor
+        require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
+        require(['vs/editor/editor.main'], function() {
+            editor = monaco.editor.create(document.getElementById('editor'), {
+                value: '',
+                language: 'python',
+                theme: 'vs-dark',
+                automaticLayout: true,
+                minimap: { enabled: false },
+                fontSize: 14
+            });
+
+            // Load default example files
+            loadDefaultExamples();
+        });
+
+        function addTerminalOutput(text, className = '') {
+            const line = document.createElement('div');
+            line.textContent = text;
+            if (className) line.className = className;
+            terminalOutput.appendChild(line);
+            terminalOutput.parentElement.scrollTop = terminalOutput.parentElement.scrollHeight;
+        }
+
+        async function initPython() {
+            try {
+                pyodide = await loadPyodide({
+                    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.24.1/full/"
+                });
+
+                // Set up stdout/stderr capture
+                pyodide.runPython(`
+                    import sys
+                    import io
+                    import os
+                    from js import console
+
+                    # Create a home directory for user files
+                    os.makedirs('/home/user', exist_ok=True)
+                    os.chdir('/home/user')
+                    
+                    class JSConsole:
+                        def write(self, text):
+                            console.log(text)
+                            return len(text)
+                        
+                        def flush(self):
+                            pass
+                    
+                    sys.stdout = JSConsole()
+                    sys.stderr = JSConsole()
+                `);
+
+                // Override console.log to display in terminal
+                const originalLog = console.log;
+                console.log = function(text) {
+                    if (text && text.trim()) {
+                        addTerminalOutput(text, 'output');
+                    }
+                    originalLog.apply(console, arguments);
+                };
+
+                addTerminalOutput('Python environment loaded successfully!', 'success');
+                addTerminalOutput('Python ' + pyodide.runPython('import sys; sys.version'));
+                addTerminalOutput('Ready to run your code!', 'success');
+                addTerminalOutput('');
+                
+                terminalInputLine.style.display = 'flex';
+                terminalInput.focus();
+            } catch (error) {
+                addTerminalOutput('Error loading Python: ' + error.message, 'error');
+            }
+        }
+
+        async function runCode() {
+            if (!pyodide) {
+                addTerminalOutput('Python environment not ready yet', 'error');
+                return;
+            }
+
+            const code = editor.getValue();
+            saveFile();
+            
+            addTerminalOutput(`\n>>> Running ${currentFile}...`, 'success');
+            
+            try {
+                // Save current file to Pyodide filesystem
+                pyodide.FS.writeFile(`/home/user/${currentFile}`, code);
+                
+                // Execute the code
+                await pyodide.runPythonAsync(code);
+            } catch (error) {
+                addTerminalOutput(error.message, 'error');
+            }
+            
+            addTerminalOutput('');
+        }
+
+        async function executeTerminalCommand(command) {
+            addTerminalOutput('>>> ' + command);
+            
+            try {
+                if (command.trim() === 'clear') {
+                    clearTerminal();
+                    return;
+                }
+                
+                if (command.trim() === 'ls') {
+                    const fileList = Array.from(files.keys()).join('\n');
+                    addTerminalOutput(fileList || 'No files');
+                    return;
+                }
+                
+                // Execute Python code
+                let result = await pyodide.runPythonAsync(command);
+                if (result !== undefined && result !== null) {
+                    addTerminalOutput(String(result));
+                }
+            } catch (error) {
+                addTerminalOutput(error.message, 'error');
+            }
+        }
+
+        function newFile() {
+            document.getElementById('newFileModal').style.display = 'block';
+            document.getElementById('newFileName').focus();
+        }
+
+        function createFile() {
+            const fileName = document.getElementById('newFileName').value.trim();
+            if (!fileName) return;
+            
+            if (!fileName.endsWith('.py')) {
+                alert('Please use .py extension for Python files');
+                return;
+            }
+            
+            if (files.has(fileName)) {
+                alert('File already exists');
+                return;
+            }
+            
+            files.set(fileName, '# ' + fileName + '\n\n');
+            openTab(fileName);
+            closeModal();
+            updateFileTree();
+        }
+
+        function saveFile() {
+            if (currentFile) {
+                files.set(currentFile, editor.getValue());
+                addTerminalOutput(`Saved ${currentFile}`, 'success');
+                
+                // Save to Pyodide filesystem
+                if (pyodide) {
+                    try {
+                        pyodide.FS.writeFile(`/home/user/${currentFile}`, editor.getValue());
+                    } catch (error) {
+                        console.error('Error saving to filesystem:', error);
+                    }
+                }
+            }
+        }
+
+        function openTab(fileName) {
+            if (!openTabs.includes(fileName)) {
+                openTabs.push(fileName);
+            }
+            
+            currentFile = fileName;
+            editor.setValue(files.get(fileName) || '');
+            updateTabs();
+            updateFileTree();
+        }
+
+        function closeTab(fileName, event) {
+            event.stopPropagation();
+            const index = openTabs.indexOf(fileName);
+            if (index > -1) {
+                openTabs.splice(index, 1);
+            }
+            
+            if (currentFile === fileName && openTabs.length > 0) {
+                openTab(openTabs[openTabs.length - 1]);
+            } else if (openTabs.length === 0) {
+                currentFile = null;
+                editor.setValue('');
+            }
+            
+            updateTabs();
+        }
+
+        function updateTabs() {
+            const tabsContainer = document.getElementById('tabs');
+            tabsContainer.innerHTML = '';
+            
+            openTabs.forEach(fileName => {
+                const tab = document.createElement('div');
+                tab.className = 'tab' + (fileName === currentFile ? ' active' : '');
+                tab.onclick = () => openTab(fileName);
+                
+                tab.innerHTML = `
+                    <span>${fileName}</span>
+                    <span class="tab-close" onclick="closeTab('${fileName}', event)">×</span>
+                `;
+                
+                tabsContainer.appendChild(tab);
+            });
+        }
+
+        function updateFileTree() {
+            const fileTree = document.getElementById('file-tree');
+            fileTree.innerHTML = '';
+            
+            files.forEach((content, fileName) => {
+                const li = document.createElement('li');
+                li.className = 'file-item' + (fileName === currentFile ? ' active' : '');
+                li.onclick = () => openTab(fileName);
+                li.innerHTML = `<span class="file-icon">📄</span> ${fileName}`;
+                fileTree.appendChild(li);
+            });
+        }
+
+        function clearTerminal() {
+            terminalOutput.innerHTML = '';
+        }
+
+        function closeModal() {
+            document.getElementById('newFileModal').style.display = 'none';
+            document.getElementById('newFileName').value = '';
+        }
+
+        // Terminal input handler
+        terminalInput.addEventListener('keydown', async (e) => {
+            if (e.key === 'Enter') {
+                const command = terminalInput.value.trim();
+                if (command) {
+                    terminalInput.value = '';
+                    await executeTerminalCommand(command);
+                }
+            }
+        });
+
+        // Modal handlers
+        document.getElementById('newFileName').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                createFile();
+            } else if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+
+        // Resize handler
+        let isResizing = false;
+        const resizeHandle = document.getElementById('resize-handle');
+        const editorDiv = document.getElementById('editor');
+        const terminalContainer = document.getElementById('terminal-container');
+
+        resizeHandle.addEventListener('mousedown', (e) => {
+            isResizing = true;
+            document.body.style.cursor = 'col-resize';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            
+            const containerWidth = document.getElementById('editor-container').offsetWidth;
+            const newEditorWidth = e.clientX - editorDiv.offsetLeft;
+            const percentage = (newEditorWidth / containerWidth) * 100;
+            
+            if (percentage > 20 && percentage < 80) {
+                editorDiv.style.width = percentage + '%';
+                terminalContainer.style.width = (100 - percentage) + '%';
+                editor.layout();
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isResizing = false;
+            document.body.style.cursor = 'default';
+        });
+
+        // Initialize Python when page loads
+        initPython();
+    </script>
+</body>
+</html>
+# This is your first Python program!
+
+print("Hello, World!")
+print("Welcome to Python programming!")
+
+# Try changing the text inside the quotes and run again
+name = "Python Learner"
+print(f"Hello, {name}!")
+
+# Python can do math too!
+print(f"2 + 2 = {2 + 2}")
+`,
+
+                '02_variables.py': `# Variables and Data Types
+# Python has different types of data
+
+# Numbers
+age = 25                    # Integer
+height = 5.9               # Float (decimal)
+print(f"Age: {age}, Height: {height}")
+
+# Strings (text)
+first_name = "John"
+last_name = "Doe"
+full_name = first_name + " " + last_name
+print(f"Full name: {full_name}")
+
+# Booleans (True/False)
+is_student = True
+is_working = False
+print(f"Student: {is_student}, Working: {is_working}")
+
+# Type checking
+print(f"Type of age: {type(age)}")
+print(f"Type of height: {type(height)}")
+print(f"Type of name: {type(first_name)}")
+`,
+
+                '03_lists.py': `# Lists - Python's Arrays
+# Lists can store multiple items
+
+# Creating lists
+fruits = ["apple", "banana", "orange", "grape"]
+numbers = [1, 2, 3, 4, 5]
+mixed = [1, "hello", 3.14, True]
+
+print("Fruits:", fruits)
+print("First fruit:", fruits[0])
+print("Last fruit:", fruits[-1])
+
+# Adding items
+fruits.append("mango")
+print("After adding mango:", fruits)
+
+# Removing items
+fruits.remove("banana")
+print("After removing banana:", fruits)
+
+# List operations
+print(f"Number of fruits: {len(fruits)}")
+print(f"Is 'apple' in fruits? {'apple' in fruits}")
+
+# Slicing
+print("First two fruits:", fruits[:2])
+print("Last two fruits:", fruits[-2:])
+
+# Looping through lists
+print("\\nAll fruits:")
+for fruit in fruits:
+    print(f"  - {fruit}")
+`,
+
+                '04_dictionaries.py': `# Dictionaries - Key-Value Pairs
+# Dictionaries store data with labels
+
+# Creating a dictionary
+person = {
+    "name": "Alice",
+    "age": 30,
+    "city": "New York",
+    "hobbies": ["reading", "coding", "hiking"]
+}
+
+print("Person info:", person)
+print("Name:", person["name"])
+print("Age:", person["age"])
+
+# Adding/updating values
+person["email"] = "alice@example.com"
+person["age"] = 31
+print("\\nUpdated person:", person)
+
+# Dictionary methods
+print("\\nAll keys:", person.keys())
+print("All values:", person.values())
+
+# Checking if key exists
+if "hobbies" in person:
+    print("\\nHobbies:")
+    for hobby in person["hobbies"]:
+        print(f"  - {hobby}")
+
+# Nested dictionary
+students = {
+    "student1": {"name": "Bob", "grade": 85},
+    "student2": {"name": "Carol", "grade": 92}
+}
+
+for student_id, info in students.items():
+    print(f"\\n{student_id}: {info['name']} - Grade: {info['grade']}")
+`,
+
+                '05_control_flow.py': `# Control Flow - Making Decisions
+# if, elif, else statements
+
+# Simple if statement
+age = 18
+if age >= 18:
+    print("You are an adult")
+else:
+    print("You are a minor")
+
+# Multiple conditions
+score = 85
+if score >= 90:
+    grade = "A"
+elif score >= 80:
+    grade = "B"
+elif score >= 70:
+    grade = "C"
+else:
+    grade = "F"
+print(f"Score: {score}, Grade: {grade}")
+
+# Combining conditions
+temperature = 75
+is_sunny = True
+
+if temperature > 70 and is_sunny:
+    print("Perfect day for a picnic!")
+elif temperature > 70 and not is_sunny:
+    print("Warm but cloudy")
+else:
+    print("Maybe stay inside")
+
+# Using 'in' operator
+favorite_colors = ["blue", "green", "red"]
+user_color = "blue"
+
+if user_color in favorite_colors:
+    print(f"{user_color} is one of my favorite colors!")
+`,
+
+                '06_loops.py': `# Loops - Repeating Actions
+# for and while loops
+
+# For loop with range
+print("Counting to 5:")
+for i in range(1, 6):
+    print(f"  Count: {i}")
+
+# For loop with list
+colors = ["red", "green", "blue", "yellow"]
+print("\\nColors:")
+for color in colors:
+    print(f"  - {color.upper()}")
+
+# Enumerate for index and value
+print("\\nColors with index:")
+for index, color in enumerate(colors):
+    print(f"  {index}: {color}")
+
+# While loop
+print("\\nCountdown:")
+count = 5
+while count > 0:
+    print(f"  {count}...")
+    count -= 1
+print("  Blast off! 🚀")
+
+# Break and continue
+print("\\nFind the first even number:")
+for num in [1, 3, 5, 6, 7, 8]:
+    if num % 2 == 0:
+        print(f"  Found: {num}")
+        break
+
+# List comprehension
+squares = [x**2 for x in range(1, 6)]
+print(f"\\nSquares: {squares}")
+`,
+
+                '07_functions.py': `# Functions - Reusable Code Blocks
+
+# Simple function
+def greet(name):
+    """This function greets a person"""
+    return f"Hello, {name}!"
+
+message = greet("Alice")
+print(message)
+
+# Function with multiple parameters
+def calculate_area(length, width):
+    """Calculate the area of a rectangle"""
+    area = length * width
+    return area
+
+room_area = calculate_area(10, 12)
+print(f"Room area: {room_area} sq ft")
+
+# Default parameters
+def introduce(name, age=0, city="Unknown"):
+    """Introduce a person with optional details"""
+    intro = f"Hi, I'm {name}"
+    if age > 0:
+        intro += f", I'm {age} years old"
+    if city != "Unknown":
+        intro += f", from {city}"
+    return intro + "."
+
+print(introduce("Bob"))
+print(introduce("Carol", 25))
+print(introduce("David", 30, "Boston"))
+
+# Function returning multiple values
+def get_min_max(numbers):
+    """Return both minimum and maximum"""
+    return min(numbers), max(numbers)
+
+nums = [5, 2, 8, 1, 9]
+minimum, maximum = get_min_max(nums)
+print(f"\\nMin: {minimum}, Max: {maximum}")
+
+# Lambda functions (one-line functions)
+square = lambda x: x**2
+print(f"\\nSquare of 5: {square(5)}")
+
+# Using functions with map
+numbers = [1, 2, 3, 4, 5]
+squared = list(map(lambda x: x**2, numbers))
+print(f"Squared numbers: {squared}")
+`,
+
+                '08_classes.py': `# Classes - Object-Oriented Programming
+# Creating custom data types
+
+# Define a class
+class Dog:
+    """A simple Dog class"""
+    
+    def __init__(self, name, age, breed):
+        """Initialize dog attributes"""
+        self.name = name
+        self.age = age
+        self.breed = breed
+    
+    def bark(self):
+        """Make the dog bark"""
+        return f"{self.name} says: Woof!"
+    
+    def describe(self):
+        """Describe the dog"""
+        return f"{self.name} is a {self.age} year old {self.breed}"
+    
+    def birthday(self):
+        """Celebrate birthday"""
+        self.age += 1
+        return f"Happy birthday {self.name}! Now {self.age} years old!"
+
+# Create instances
+my_dog = Dog("Buddy", 3, "Golden Retriever")
+print(my_dog.describe())
+print(my_dog.bark())
+print(my_dog.birthday())
+
+# Another example - Bank Account
+class BankAccount:
+    """A simple bank account class"""
+    
+    def __init__(self, owner, balance=0):
+        self.owner = owner
+        self.balance = balance
+    
+    def deposit(self, amount):
+        self.balance += amount
+        return f"Deposited ${amount}. New balance: ${self.balance}"
+    
+    def withdraw(self, amount):
+        if amount <= self.balance:
+            self.balance -= amount
+            return f"Withdrew ${amount}. New balance: ${self.balance}"
+        return "Insufficient funds!"
+    
+    def __str__(self):
+        return f"{self.owner}'s account: ${self.balance}"
+
+# Using the BankAccount
+account = BankAccount("Alice", 1000)
+print(account)
+print(account.deposit(500))
+print(account.withdraw(200))
+print(account)
+`,
+
+                '09_errors.py': `# Error Handling - Dealing with Problems
+# Using try, except, finally
+
+# Basic error handling
+def divide(a, b):
+    try:
+        result = a / b
+        return f"{a} / {b} = {result}"
+    except ZeroDivisionError:
+        return "Error: Cannot divide by zero!"
+    except TypeError:
+        return "Error: Please provide numbers only!"
+
+print(divide(10, 2))
+print(divide(10, 0))
+print(divide(10, "two"))
+
+# Multiple error types
+def get_list_item(lst, index):
+    try:
+        return f"Item at index {index}: {lst[index]}"
+    except IndexError:
+        return f"Error: Index {index} is out of range!"
+    except TypeError:
+        return "Error: Invalid index type!"
+
+my_list = ["apple", "banana", "orange"]
+print(get_list_item(my_list, 1))
+print(get_list_item(my_list, 10))
+print(get_list_item(my_list, "one"))
+
+# Using finally
+def read_number():
+    try:
+        num = int(input("Enter a number: "))
+        print(f"You entered: {num}")
+    except ValueError:
+        print("That's not a valid number!")
+    finally:
+        print("Thanks for using the program!")
+
+# Custom exceptions
+class TooYoungError(Exception):
+    pass
+
+def check_age(age):
+    if age < 0:
+        raise ValueError("Age cannot be negative!")
+    elif age < 18:
+        raise TooYoungError("Must be 18 or older!")
+    else:
+        return "Access granted!"
+
+# Test custom exception
+ages = [25, 15, -5, 30]
+for age in ages:
+    try:
+        print(f"Age {age}: {check_age(age)}")
+    except (ValueError, TooYoungError) as e:
+        print(f"Age {age}: {e}")
+`,
+
+                '10_modules.py': `# Using Python Modules
+# Import and use built-in libraries
+
+# Math module
+import math
+
+print("Math operations:")
+print(f"Pi: {math.pi}")
+print(f"Square root of 16: {math.sqrt(16)}")
+print(f"Ceiling of 4.3: {math.ceil(4.3)}")
+print(f"Floor of 4.7: {math.floor(4.7)}")
+
+# Random module
+import random
+
+print("\\nRandom operations:")
+print(f"Random number 1-10: {random.randint(1, 10)}")
+print(f"Random float 0-1: {random.random()}")
+
+fruits = ["apple", "banana", "orange", "grape"]
+print(f"Random fruit: {random.choice(fruits)}")
+
+# Shuffle a list
+numbers = [1, 2, 3, 4, 5]
+random.shuffle(numbers)
+print(f"Shuffled numbers: {numbers}")
+
+# Datetime module
+from datetime import datetime, timedelta
+
+print("\\nDate and time:")
+now = datetime.now()
+print(f"Current time: {now}")
+print(f"Today's date: {now.date()}")
+print(f"Current time: {now.time()}")
+
+# Date arithmetic
+tomorrow = now + timedelta(days=1)
+print(f"Tomorrow: {tomorrow.date()}")
+
+# Formatting dates
+print(f"Formatted: {now.strftime('%B %d, %Y at %I:%M %p')}")
+
+# String operations
+import string
+
+print("\\nString module:")
+print(f"Lowercase letters: {string.ascii_lowercase}")
+print(f"Digits: {string.digits}")
+print(f"Punctuation: {string.punctuation}")
+
+# Creating a random password
+chars = string.ascii_letters + string.digits
+password = ''.join(random.choice(chars) for _ in range(8))
+print(f"Random password: {password}")
+`,
+
+                'welcome.py': `# Welcome to Python Online IDE! 🐍
+# 
+# This is an interactive Python learning environment.
+# Click on any example file on the left to learn Python concepts!
+# 
+# Quick Start:
+# 1. Browse example files in the sidebar (01_hello_world.py to 10_modules.py)
+# 2. Click on a file to open it
+# 3. Read the comments to understand the concepts
+# 4. Press the green "Run" button to execute the code
+# 5. See the output in the terminal on the right
+# 6. Try modifying the code and run again!
+# 
+# Tips:
+# - You can create new files with the "New File" button
+# - The terminal also accepts direct Python commands
+# - Type "clear" in the terminal to clear the output
+# - All your code runs safely in your browser
+# 
+# Let's start with a simple example:
+
+print("🎉 Welcome to Python!")
+print("Your learning journey begins here!")
+
+# Your turn! Try these:
+# 1. Change the welcome message above
+# 2. Add your name to the print statement
+# 3. Click Run to see your changes!
+
+name = "YOUR_NAME"  # Change this!
+print(f"Happy coding, {name}! 🚀")
+`
+            };
+
+            // Load all example files
+            for (const [filename, content] of Object.entries(examples)) {
+                files.set(filename, content);
+            }
+
+            // Open the welcome file first
+            currentFile = 'welcome.py';
+            files.set(currentFile, examples[currentFile]);
+            openTabs.push(currentFile);
+            editor.setValue(files.get(currentFile));
+            
+            updateTabs();
+            updateFileTree();
+        }
+
+        // Initialize Python when page loads
+        initPython();
+    </script>
+</body>
+</html>
