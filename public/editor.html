@@ -201,6 +201,44 @@
             overflow-y: auto;
             font-family: 'Consolas', 'Courier New', monospace;
             font-size: 14px;
+            /* Enhanced scroll bar visibility */
+            scrollbar-width: thin;
+            scrollbar-color: #666 #2d2d30;
+        }
+
+        /* Enhanced scroll bar styling for WebKit browsers (Chrome, Safari, Edge) */
+        #terminal::-webkit-scrollbar {
+            width: 14px;
+        }
+
+        #terminal::-webkit-scrollbar-track {
+            background: #2d2d30;
+            border-radius: 7px;
+            border: 1px solid #3e3e42;
+        }
+
+        #terminal::-webkit-scrollbar-thumb {
+            background: #666;
+            border-radius: 7px;
+            border: 2px solid #2d2d30;
+            min-height: 30px;
+        }
+
+        #terminal::-webkit-scrollbar-thumb:hover {
+            background: #888;
+        }
+
+        #terminal::-webkit-scrollbar-thumb:active {
+            background: #999;
+        }
+
+        /* Terminal scroll indicator when content overflows */
+        #terminal {
+            position: relative;
+        }
+
+        #terminal:hover::-webkit-scrollbar-thumb {
+            background: #777;
         }
 
         #terminal-output {
@@ -744,7 +782,11 @@ print("Python programming learning begins!")`;
             line.textContent = text;
             if (className) line.className = className;
             terminalOutput.appendChild(line);
-            terminalOutput.parentElement.scrollTop = terminalOutput.parentElement.scrollHeight;
+            
+            // Auto-scroll to show new output
+            const terminal = terminalOutput.parentElement;
+            terminal.scrollTop = terminal.scrollHeight;
+            
             terminalLineCount++;
             updateMemoryInfo();
         }
@@ -828,6 +870,22 @@ print("Python programming learning begins!")`;
             }
             
             addTerminalOutput('');
+            
+            // Ensure terminal scrolls to show the latest output
+            scrollTerminalToBottom();
+        }
+        
+        // Helper function to scroll terminal to bottom
+        function scrollTerminalToBottom() {
+            const terminal = document.getElementById('terminal');
+            if (terminal) {
+                terminal.scrollTop = terminal.scrollHeight;
+                // Additional smooth scroll for better UX
+                terminal.scrollTo({
+                    top: terminal.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }
         }
 
         async function executeTerminalCommand(command) {
