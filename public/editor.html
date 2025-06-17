@@ -357,33 +357,11 @@
     <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
     <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
     <script>
-        let pyodide;
-        let editor;
-        let currentFile = null;
-        let files = new Map();
-        let openTabs = [];
-        let maxTerminalLines = 500;
-        let maxOpenTabs = 3;
-        let terminalLineCount = 0;
-
-        // Warn if required libraries fail to load
-        setTimeout(() => {
-            if (typeof loadPyodide === 'undefined') {
-                alert('Failed to load Pyodide. Check your network connection.');
-            }
-            if (typeof require === 'undefined') {
-                alert('Failed to load Monaco editor resources. Check your network connection.');
-            }
-        }, 5000);
-
-        // Terminal elements
-        const terminalOutput = document.getElementById('terminal-output');
-        const terminalInput = document.getElementById('terminal-input');
-        const terminalInputLine = document.getElementById('terminal-input-line');
-        const memoryInfo = document.getElementById('memory-info');
-
-        // Example files list
-        const exampleFiles = [
+        // Initialize global variables immediately for testing accessibility
+        window.currentFile = null;
+        window.files = new Map();
+        window.openTabs = [];
+        window.exampleFiles = [
             'welcome.py',
             '01_hello_world.py',
             '02_variables.py',
@@ -396,538 +374,262 @@
             '09_errors.py',
             '10_modules.py'
         ];
+        
+        // exampleTemplates will be initialized later with full content
+        
+        // Initialize local variables
+        let pyodide;
+        let editor;
+        let maxTerminalLines = 500;
+        let maxOpenTabs = 3;
+        let terminalLineCount = 0;
+        
+        // Initialize functions immediately for testing (proper implementation follows)
+        window.loadFile = function(filename) {
+            console.log('loadFile called early:', filename);
+            // Will be replaced by full implementation
+        };
+        
+        window.updateFileTree = function() {
+            console.log('updateFileTree called early');
+            const fileTree = document.getElementById('file-tree');
+            if (fileTree && window.exampleFiles) {
+                fileTree.innerHTML = '';
+                window.exampleFiles.forEach(fileName => {
+                    const li = document.createElement('li');
+                    li.className = 'file-item' + (fileName === window.currentFile ? ' active' : '');
+                    li.onclick = () => window.loadFile(fileName);
+                    const isLoaded = window.files.has(fileName);
+                    const icon = isLoaded ? '📄' : '📋';
+                    li.innerHTML = `<span class="file-icon">${icon}</span> ${fileName}`;
+                    fileTree.appendChild(li);
+                });
+                console.log('File tree populated with', window.exampleFiles.length, 'items');
+            } else {
+                console.error('File tree element or exampleFiles not found');
+            }
+        };
 
-        // Example templates (now as regular object)
-        const exampleTemplates = {
-            'welcome.py': `# Welcome to Python Online IDE! 🐍
-# 
-# This memory-optimized version loads examples on demand.
-# Click on any example file below to learn Python concepts!
-# 
-# Quick Start:
-# 1. Browse example files in the sidebar
-# 2. Click on a file to load and open it
-# 3. Read the comments to understand the concepts
-# 4. Press the green "Run" button to execute the code
-# 5. See the output in the terminal on the right
-# 6. Try modifying the code and run again!
-# 
-# Memory Optimizations:
-# - Examples load only when clicked (lazy loading)
-# - Maximum of 3 tabs open at once
-# - Terminal history limited to 500 lines
-# - Closed files are cleaned from memory
-# - Use "Clear Memory" button to reset everything
-# 
-# Let's start with a simple example:
+        // Library loading is now handled in specific initialization functions
+
+        // Terminal elements
+        const terminalOutput = document.getElementById('terminal-output');
+        const terminalInput = document.getElementById('terminal-input');
+        const terminalInputLine = document.getElementById('terminal-input-line');
+        const memoryInfo = document.getElementById('memory-info');
+
+        // Example files list already initialized at top of script
+
+        // Load templates with proper formatting
+        window.exampleTemplates = {};
+        
+        // Helper function to create properly formatted templates
+        function addTemplate(name, content) {
+            window.exampleTemplates[name] = content.replace(/\\n/g, '\n');
+        }
+        window.exampleTemplates['welcome.py'] = `# Welcome to Python Online IDE! 🐍
 
 print("🎉 Welcome to Python!")
 print("Your learning journey begins here!")
 
-# Your turn! Try these:
-# 1. Change the welcome message above
-# 2. Add your name to the print statement
-# 3. Click Run to see your changes!
-
+# Try changing the text below
 name = "YOUR_NAME"  # Change this!
 print(f"Happy coding, {name}! 🚀")
-`,
 
-            '01_hello_world.py': `# Python Basics - Hello World
-# This is your first Python program!
-
-print("Hello, World!")
-print("Welcome to Python programming!")
-
-# Try changing the text inside the quotes and run again
-name = "Python Learner"
-print(f"Hello, {name}!")
-
-# Python can do math too!
-print(f"2 + 2 = {2 + 2}")
-`,
-
-            '02_variables.py': `# Variables and Data Types
-# Python has different types of data
-
-# Numbers
-age = 25                    # Integer
-height = 5.9               # Float (decimal)
-print(f"Age: {age}, Height: {height}")
-
-# Strings (text)
-first_name = "John"
-last_name = "Doe"
-full_name = first_name + " " + last_name
-print(f"Full name: {full_name}")
-
-# Booleans (True/False)
-is_student = True
-is_working = False
-print(f"Student: {is_student}, Working: {is_working}")
-
-# Type checking
-print(f"Type of age: {type(age)}")
-print(f"Type of height: {type(height)}")
-print(f"Type of name: {type(first_name)}")
-`,
-
-            '03_lists.py': `# Lists - Python's Arrays
-# Lists can store multiple items
-
-# Creating lists
-fruits = ["apple", "banana", "orange", "grape"]
-numbers = [1, 2, 3, 4, 5]
-mixed = [1, "hello", 3.14, True]
-
-print("Fruits:", fruits)
-print("First fruit:", fruits[0])
-print("Last fruit:", fruits[-1])
-
-# Adding items
-fruits.append("mango")
-print("After adding mango:", fruits)
-
-# Removing items
-fruits.remove("banana")
-print("After removing banana:", fruits)
-
-# List operations
-print(f"Number of fruits: {len(fruits)}")
-print(f"Is 'apple' in fruits? {'apple' in fruits}")
-
-# Slicing
-print("First two fruits:", fruits[:2])
-print("Last two fruits:", fruits[-2:])
-
-# Looping through lists
-print("\\nAll fruits:")
-for fruit in fruits:
-    print(f"  - {fruit}")
-`,
-
-            '04_dictionaries.py': `# Dictionaries - Key-Value Pairs
-# Dictionaries store data with labels
-
-# Creating a dictionary
-person = {
-    "name": "Alice",
-    "age": 30,
-    "city": "New York",
-    "hobbies": ["reading", "coding", "hiking"]
-}
-
-print("Person info:", person)
-print("Name:", person["name"])
-print("Age:", person["age"])
-
-# Adding/updating values
-person["email"] = "alice@example.com"
-person["age"] = 31
-print("\\nUpdated person:", person)
-
-# Dictionary methods
-print("\\nAll keys:", person.keys())
-print("All values:", person.values())
-
-# Checking if key exists
-if "hobbies" in person:
-    print("\\nHobbies:")
-    for hobby in person["hobbies"]:
-        print(f"  - {hobby}")
-
-# Nested dictionary
-students = {
-    "student1": {"name": "Bob", "grade": 85},
-    "student2": {"name": "Carol", "grade": 92}
-}
-
-for student_id, info in students.items():
-    print(f"\\n{student_id}: {info['name']} - Grade: {info['grade']}")
-`,
-
-            '05_control_flow.py': `# Control Flow - Making Decisions
-# if, elif, else statements
-
-# Simple if statement
-age = 18
-if age >= 18:
-    print("You are an adult")
-else:
-    print("You are a minor")
-
-# Multiple conditions
-score = 85
-if score >= 90:
-    grade = "A"
-elif score >= 80:
-    grade = "B"
-elif score >= 70:
-    grade = "C"
-else:
-    grade = "F"
-print(f"Score: {score}, Grade: {grade}")
-
-# Combining conditions
-temperature = 75
-is_sunny = True
-
-if temperature > 70 and is_sunny:
-    print("Perfect day for a picnic!")
-elif temperature > 70 and not is_sunny:
-    print("Warm but cloudy")
-else:
-    print("Maybe stay inside")
-
-# Using 'in' operator
-favorite_colors = ["blue", "green", "red"]
-user_color = "blue"
-
-if user_color in favorite_colors:
-    print(f"{user_color} is one of my favorite colors!")
-`,
-
-            '06_loops.py': `# Loops - Repeating Actions
-# for and while loops
-
-# For loop with range
-print("Counting to 5:")
-for i in range(1, 6):
-    print(f"  Count: {i}")
-
-# For loop with list
-colors = ["red", "green", "blue", "yellow"]
-print("\\nColors:")
-for color in colors:
-    print(f"  - {color.upper()}")
-
-# Enumerate for index and value
-print("\\nColors with index:")
-for index, color in enumerate(colors):
-    print(f"  {index}: {color}")
-
-# While loop
-print("\\nCountdown:")
-count = 5
-while count > 0:
-    print(f"  {count}...")
-    count -= 1
-print("  Blast off! 🚀")
-
-# Break and continue
-print("\\nFind the first even number:")
-for num in [1, 3, 5, 6, 7, 8]:
-    if num % 2 == 0:
-        print(f"  Found: {num}")
-        break
-
-# List comprehension
-squares = [x**2 for x in range(1, 6)]
-print(f"\\nSquares: {squares}")
-`,
-
-            '07_functions.py': `# Functions - Reusable Code Blocks
-
-# Simple function
-def greet(name):
-    """This function greets a person"""
-    return f"Hello, {name}!"
-
-message = greet("Alice")
-print(message)
-
-# Function with multiple parameters
-def calculate_area(length, width):
-    """Calculate the area of a rectangle"""
-    area = length * width
-    return area
-
-room_area = calculate_area(10, 12)
-print(f"Room area: {room_area} sq ft")
-
-# Default parameters
-def introduce(name, age=0, city="Unknown"):
-    """Introduce a person with optional details"""
-    intro = f"Hi, I'm {name}"
-    if age > 0:
-        intro += f", I'm {age} years old"
-    if city != "Unknown":
-        intro += f", from {city}"
-    return intro + "."
-
-print(introduce("Bob"))
-print(introduce("Carol", 25))
-print(introduce("David", 30, "Boston"))
-
-# Function returning multiple values
-def get_min_max(numbers):
-    """Return both minimum and maximum"""
-    return min(numbers), max(numbers)
-
-nums = [5, 2, 8, 1, 9]
-minimum, maximum = get_min_max(nums)
-print(f"\\nMin: {minimum}, Max: {maximum}")
-
-# Lambda functions (one-line functions)
-square = lambda x: x**2
-print(f"\\nSquare of 5: {square(5)}")
-
-# Using functions with map
-numbers = [1, 2, 3, 4, 5]
-squared = list(map(lambda x: x**2, numbers))
-print(f"Squared numbers: {squared}")
-`,
-
-            '08_classes.py': `# Classes - Object-Oriented Programming
-# Creating custom data types
-
-# Define a class
-class Dog:
-    """A simple Dog class"""
-    
-    def __init__(self, name, age, breed):
-        """Initialize dog attributes"""
-        self.name = name
-        self.age = age
-        self.breed = breed
-    
-    def bark(self):
-        """Make the dog bark"""
-        return f"{self.name} says: Woof!"
-    
-    def describe(self):
-        """Describe the dog"""
-        return f"{self.name} is a {self.age} year old {self.breed}"
-    
-    def birthday(self):
-        """Celebrate birthday"""
-        self.age += 1
-        return f"Happy birthday {self.name}! Now {self.age} years old!"
-
-# Create instances
-my_dog = Dog("Buddy", 3, "Golden Retriever")
-print(my_dog.describe())
-print(my_dog.bark())
-print(my_dog.birthday())
-
-# Another example - Bank Account
-class BankAccount:
-    """A simple bank account class"""
-    
-    def __init__(self, owner, balance=0):
-        self.owner = owner
-        self.balance = balance
-    
-    def deposit(self, amount):
-        self.balance += amount
-        return f"Deposited ${amount}. New balance: ${self.balance}"
-    
-    def withdraw(self, amount):
-        if amount <= self.balance:
-            self.balance -= amount
-            return f"Withdrew ${amount}. New balance: ${self.balance}"
-        return "Insufficient funds!"
-    
-    def __str__(self):
-        return f"{self.owner}'s account: ${self.balance}"
-
-# Using the BankAccount
-account = BankAccount("Alice", 1000)
-print(account)
-print(account.deposit(500))
-print(account.withdraw(200))
-print(account)
-`,
-
-            '09_errors.py': `# Error Handling - Dealing with Problems
-# Using try, except, finally
-
-# Basic error handling
-def divide(a, b):
-    try:
-        result = a / b
-        return f"{a} / {b} = {result}"
-    except ZeroDivisionError:
-        return "Error: Cannot divide by zero!"
-    except TypeError:
-        return "Error: Please provide numbers only!"
-
-print(divide(10, 2))
-print(divide(10, 0))
-print(divide(10, "two"))
-
-# Multiple error types
-def get_list_item(lst, index):
-    try:
-        return f"Item at index {index}: {lst[index]}"
-    except IndexError:
-        return f"Error: Index {index} is out of range!"
-    except TypeError:
-        return "Error: Invalid index type!"
-
-my_list = ["apple", "banana", "orange"]
-print(get_list_item(my_list, 1))
-print(get_list_item(my_list, 10))
-print(get_list_item(my_list, "one"))
-
-# Using finally
-def read_number():
-    try:
-        num = int(input("Enter a number: "))
-        print(f"You entered: {num}")
-    except ValueError:
-        print("That's not a valid number!")
-    finally:
-        print("Thanks for using the program!")
-
-# Custom exceptions
-class TooYoungError(Exception):
-    pass
-
-def check_age(age):
-    if age < 0:
-        raise ValueError("Age cannot be negative!")
-    elif age < 18:
-        raise TooYoungError("Must be 18 or older!")
-    else:
-        return "Access granted!"
-
-# Test custom exception
-ages = [25, 15, -5, 30]
-for age in ages:
-    try:
-        print(f"Age {age}: {check_age(age)}")
-    except (ValueError, TooYoungError) as e:
-        print(f"Age {age}: {e}")
-`,
-
-            '10_modules.py': `# Using Python Modules
-# Import and use built-in libraries
-
-# Math module
-import math
-
-print("Math operations:")
-print(f"Pi: {math.pi}")
-print(f"Square root of 16: {math.sqrt(16)}")
-print(f"Ceiling of 4.3: {math.ceil(4.3)}")
-print(f"Floor of 4.7: {math.floor(4.7)}")
-
-# Random module
-import random
-
-print("\\nRandom operations:")
-print(f"Random number 1-10: {random.randint(1, 10)}")
-print(f"Random float 0-1: {random.random()}")
-
-fruits = ["apple", "banana", "orange", "grape"]
-print(f"Random fruit: {random.choice(fruits)}")
-
-# Shuffle a list
-numbers = [1, 2, 3, 4, 5]
-random.shuffle(numbers)
-print(f"Shuffled numbers: {numbers}")
-
-# Datetime module
-from datetime import datetime, timedelta
-
-print("\\nDate and time:")
-now = datetime.now()
-print(f"Current time: {now}")
-print(f"Today's date: {now.date()}")
-print(f"Current time: {now.time()}")
-
-# Date arithmetic
-tomorrow = now + timedelta(days=1)
-print(f"Tomorrow: {tomorrow.date()}")
-
-# Formatting dates
-print(f"Formatted: {now.strftime('%B %d, %Y at %I:%M %p')}")
-
-# String operations
-import string
-
-print("\\nString module:")
-print(f"Lowercase letters: {string.ascii_lowercase}")
-print(f"Digits: {string.digits}")
-print(f"Punctuation: {string.punctuation}")
-
-# Creating a random password
-chars = string.ascii_letters + string.digits
-password = ''.join(random.choice(chars) for _ in range(8))
-print(f"Random password: {password}")
-`
-        };
-
-        // Initialize Monaco Editor
-        require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
-        require(['vs/editor/editor.main'], function() {
-            editor = monaco.editor.create(document.getElementById('editor'), {
-                value: '',
-                language: 'python',
-                theme: 'vs-dark',
-                automaticLayout: true,
-                minimap: { enabled: false },
-                fontSize: 14
-            });
-
-            // Load welcome file initially
-            loadFile('welcome.py');
-        });
-
-        // Load file content on demand
-        function loadFile(filename) {
+# Click on other example files to learn more!`;
+        addTemplate('01_hello_world.py', '# Python Basics - Hello World\\n# This is your first Python program!\\n\\nprint("Hello, World!")\\nprint("Welcome to Python programming!")\\n\\n# Try changing the text inside the quotes and run again\\nname = "Python Learner"\\nprint(f"Hello, {name}!")\\n\\n# Python can do math too!\\nprint(f"2 + 2 = {2 + 2}")');
+        
+        addTemplate('02_variables.py', '# Variables and Data Types\\n# Python has different types of data\\n\\n# Numbers\\nage = 25                    # Integer\\nheight = 5.9               # Float (decimal)\\nprint(f"Age: {age}, Height: {height}")\\n\\n# Strings (text)\\nfirst_name = "John"\\nlast_name = "Doe"\\nfull_name = first_name + " " + last_name\\nprint(f"Full name: {full_name}")\\n\\n# Booleans (True/False)\\nis_student = True\\nprint(f"Student: {is_student}")');
+        
+        addTemplate('03_lists.py', '# Lists - Python Arrays\\n# Lists can store multiple items\\n\\n# Creating lists\\nfruits = ["apple", "banana", "orange", "grape"]\\nprint("Fruits:", fruits)\\nprint("First fruit:", fruits[0])\\n\\n# Adding items\\nfruits.append("mango")\\nprint("After adding mango:", fruits)\\n\\n# Looping through lists\\nprint("All fruits:")\\nfor fruit in fruits:\\n    print(f"  - {fruit}")');
+        
+        addTemplate('04_dictionaries.py', '# Dictionaries - Key-Value Pairs\\n# Dictionaries store data with labels\\n\\n# Creating a dictionary\\nperson = {\\n    "name": "Alice",\\n    "age": 30,\\n    "city": "New York"\\n}\\n\\nprint("Person info:", person)\\nprint("Name:", person["name"])\\nprint("Age:", person["age"])\\n\\n# Adding values\\nperson["email"] = "alice@example.com"\\nprint("Updated:", person)');
+        
+        addTemplate('05_control_flow.py', '# Control Flow - Making Decisions\\n# if, elif, else statements\\n\\n# Simple if statement\\nage = 18\\nif age >= 18:\\n    print("You are an adult")\\nelse:\\n    print("You are a minor")\\n\\n# Multiple conditions\\nscore = 85\\nif score >= 90:\\n    grade = "A"\\nelif score >= 80:\\n    grade = "B"\\nelse:\\n    grade = "C"\\nprint(f"Score: {score}, Grade: {grade}")');
+        
+        addTemplate('06_loops.py', '# Loops - Repeating Actions\\n# for and while loops\\n\\n# For loop with range\\nprint("Counting to 5:")\\nfor i in range(1, 6):\\n    print(f"  Count: {i}")\\n\\n# For loop with list\\ncolors = ["red", "green", "blue", "yellow"]\\nprint("Colors:")\\nfor color in colors:\\n    print(f"  - {color.upper()}")\\n\\n# While loop\\ncount = 3\\nwhile count > 0:\\n    print(f"  {count}...")\\n    count -= 1\\nprint("  Done!")');
+        
+        addTemplate('07_functions.py', '# Functions - Reusable Code Blocks\\n\\n# Simple function\\ndef greet(name):\\n    return f"Hello, {name}!"\\n\\nmessage = greet("Alice")\\nprint(message)\\n\\n# Function with multiple parameters\\ndef calculate_area(length, width):\\n    area = length * width\\n    return area\\n\\nroom_area = calculate_area(10, 12)\\nprint(f"Room area: {room_area} sq ft")\\n\\n# Default parameters\\ndef introduce(name, age=0):\\n    if age > 0:\\n        return f"Hi, I am {name}, {age} years old"\\n    return f"Hi, I am {name}"\\n\\nprint(introduce("Bob"))\\nprint(introduce("Carol", 25))');
+        
+        addTemplate('08_classes.py', '# Classes - Object-Oriented Programming\\n\\n# Define a class\\nclass Dog:\\n    def __init__(self, name, age):\\n        self.name = name\\n        self.age = age\\n    \\n    def bark(self):\\n        return f"{self.name} says: Woof!"\\n    \\n    def describe(self):\\n        return f"{self.name} is {self.age} years old"\\n\\n# Create instances\\nmy_dog = Dog("Buddy", 3)\\nprint(my_dog.describe())\\nprint(my_dog.bark())\\n\\n# Another dog\\nother_dog = Dog("Luna", 5)\\nprint(other_dog.describe())');
+        
+        addTemplate('09_errors.py', '# Error Handling - Dealing with Problems\\n\\n# Basic error handling\\ndef divide(a, b):\\n    try:\\n        result = a / b\\n        return f"{a} / {b} = {result}"\\n    except ZeroDivisionError:\\n        return "Error: Cannot divide by zero!"\\n\\nprint(divide(10, 2))\\nprint(divide(10, 0))\\n\\n# Multiple error types\\ndef safe_convert(value):\\n    try:\\n        return int(value)\\n    except ValueError:\\n        return f"Cannot convert {value} to integer"\\n\\nprint(safe_convert("123"))\\nprint(safe_convert("abc"))');
+        
+        addTemplate('10_modules.py', '# Using Python Modules\\n\\n# Math module\\nimport math\\n\\nprint("Math operations:")\\nprint(f"Pi: {math.pi}")\\nprint(f"Square root of 16: {math.sqrt(16)}")\\nprint(f"Ceiling of 4.3: {math.ceil(4.3)}")\\n\\n# Random module\\nimport random\\n\\nprint("Random operations:")\\nprint(f"Random number 1-10: {random.randint(1, 10)}")\\n\\nfruits = ["apple", "banana", "orange", "grape"]\\nprint(f"Random fruit: {random.choice(fruits)}")\\n\\n# Random password\\nimport string\\nchars = string.ascii_letters + string.digits\\npassword = "".join(random.choice(chars) for _ in range(8))\\nprint(f"Random password: {password}")');
+        
+        console.log('Templates loaded with proper formatting:', Object.keys(window.exampleTemplates).length);
+        
+        // Templates now loaded safely above
+
+        // Initialize Monaco Editor with better error handling
+        function initMonacoEditor() {
+            try {
+                if (typeof require === 'undefined') {
+                    console.error('RequireJS not loaded, using fallback editor');
+                    createFallbackEditor();
+                    return;
+                }
+                
+                require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
+                require(['vs/editor/editor.main'], function() {
+                    try {
+                        editor = monaco.editor.create(document.getElementById('editor'), {
+                            value: '',
+                            language: 'python',
+                            theme: 'vs-dark',
+                            automaticLayout: true,
+                            minimap: { enabled: false },
+                            fontSize: 14
+                        });
+                        
+                        console.log('Monaco editor initialized successfully');
+                        
+                        // Make editor globally accessible
+                        window.editor = editor;
+                        
+                        // Load welcome file initially
+                        window.loadFile('welcome.py');
+                        
+                    } catch (error) {
+                        console.error('Monaco editor creation failed:', error);
+                        createFallbackEditor();
+                    }
+                }, function(error) {
+                    console.error('Monaco editor module loading failed:', error);
+                    createFallbackEditor();
+                });
+                
+            } catch (error) {
+                console.error('Monaco editor initialization failed:', error);
+                createFallbackEditor();
+            }
+        }
+        
+        function createFallbackEditor() {
+            console.log('Creating fallback textarea editor');
+            const editorContainer = document.getElementById('editor');
+            editorContainer.innerHTML = '<textarea id="fallback-editor" style="width:100%;height:100%;background:#1e1e1e;color:#d4d4d4;border:none;font-family:monospace;font-size:14px;padding:10px;resize:none;"></textarea>';
+            const fallbackEditor = document.getElementById('fallback-editor');
+            
+            // Create a simple editor object to match Monaco's interface
+            editor = {
+                setValue: (value) => { fallbackEditor.value = value; },
+                getValue: () => fallbackEditor.value,
+                layout: () => {}
+            };
+            
+            // Make editor globally accessible
+            window.editor = editor;
+            
+            console.log('Fallback editor created');
+            
+            // Load welcome file
+            window.loadFile('welcome.py');
+        }
+        
+        // Try to initialize Monaco, with fallback after timeout
+        initMonacoEditor();
+        
+        // Fallback timeout if Monaco takes too long
+        setTimeout(() => {
+            if (!window.editor) {
+                console.log('Monaco editor timeout, creating fallback');
+                createFallbackEditor();
+            }
+        }, 10000);
+
+        // Replace the early loadFile function with full implementation
+        window.loadFile = function loadFile(filename) {
+            console.log('loadFile called with:', filename);
+            
             // Load content if not already loaded
-            if (!files.has(filename) && exampleTemplates[filename]) {
-                files.set(filename, exampleTemplates[filename]);
+            if (!window.files.has(filename) && window.exampleTemplates[filename]) {
+                window.files.set(filename, window.exampleTemplates[filename]);
+                console.log('Loaded content for:', filename, 'Length:', window.exampleTemplates[filename].length);
+            } else if (!window.exampleTemplates[filename]) {
+                console.error('No template found for:', filename);
+                return;
             }
             
             // Manage tab limits
-            if (!openTabs.includes(filename)) {
-                if (openTabs.length >= maxOpenTabs) {
-                    const oldestTab = openTabs.shift();
+            if (!window.openTabs.includes(filename)) {
+                if (window.openTabs.length >= maxOpenTabs) {
+                    const oldestTab = window.openTabs.shift();
                     cleanupFile(oldestTab);
                 }
-                openTabs.push(filename);
+                window.openTabs.push(filename);
             }
             
-            currentFile = filename;
-            editor.setValue(files.get(filename) || '');
+            window.currentFile = filename;
+            
+            // Try to set editor content with fallback
+            const content = window.files.get(filename) || '';
+            if (window.editor && window.editor.setValue) {
+                try {
+                    window.editor.setValue(content);
+                    console.log('Editor content set successfully');
+                } catch (error) {
+                    console.error('Error setting editor content:', error);
+                }
+            } else {
+                console.log('Editor not ready, waiting...');
+                // Wait for editor to be ready
+                let attempts = 0;
+                const waitForEditor = setInterval(() => {
+                    attempts++;
+                    if (window.editor && window.editor.setValue) {
+                        try {
+                            window.editor.setValue(content);
+                            console.log('Editor content set after waiting');
+                            clearInterval(waitForEditor);
+                        } catch (error) {
+                            console.error('Error setting editor content after waiting:', error);
+                            clearInterval(waitForEditor);
+                        }
+                    } else if (attempts > 50) { // 5 seconds max
+                        console.error('Editor never became ready');
+                        clearInterval(waitForEditor);
+                    }
+                }, 100);
+            }
+            
             updateTabs();
-            updateFileTree();
+            window.updateFileTree();
             updateMemoryInfo();
-        }
+            
+            console.log('loadFile completed. Current file:', window.currentFile, 'Files in memory:', window.files.size);
+        };
 
         // Clean up file content when tab is closed
         function cleanupFile(filename) {
-            if (exampleTemplates[filename] && filename !== currentFile) {
-                files.delete(filename);
+            if (window.exampleTemplates[filename] && filename !== window.currentFile) {
+                window.files.delete(filename);
             }
             updateMemoryInfo();
         }
 
         // Memory management
         function updateMemoryInfo() {
-            const memUsage = (files.size * 2 + terminalLineCount * 0.1).toFixed(1);
+            const memUsage = (window.files.size * 2 + terminalLineCount * 0.1).toFixed(1);
             memoryInfo.textContent = `Memory: ${memUsage} KB`;
         }
 
         function clearMemory() {
             // Clear all files except current
-            const currentContent = files.get(currentFile);
-            files.clear();
-            if (currentFile && currentContent) {
-                files.set(currentFile, currentContent);
+            const currentContent = window.files.get(window.currentFile);
+            window.files.clear();
+            if (window.currentFile && currentContent) {
+                window.files.set(window.currentFile, currentContent);
             }
             
             // Clear terminal
             clearTerminal();
             
             // Close all tabs except current
-            if (currentFile) {
-                openTabs = [currentFile];
+            if (window.currentFile) {
+                window.openTabs = [window.currentFile];
             } else {
-                openTabs = [];
+                window.openTabs = [];
             }
             
             updateTabs();
@@ -956,9 +658,17 @@ print(f"Random password: {password}")
 
         async function initPython() {
             try {
+                addTerminalOutput('Initializing Python environment...', 'info');
+                
+                if (typeof loadPyodide === 'undefined') {
+                    throw new Error('Pyodide library not loaded. Check internet connection.');
+                }
+                
                 pyodide = await loadPyodide({
                     indexURL: "https://cdn.jsdelivr.net/pyodide/v0.24.1/full/"
                 });
+
+                addTerminalOutput('Pyodide loaded, setting up environment...', 'info');
 
                 pyodide.runPython(`
                     import sys
@@ -988,14 +698,21 @@ print(f"Random password: {password}")
                     originalLog.apply(console, arguments);
                 };
 
-                addTerminalOutput('Python environment loaded successfully!', 'success');
-                addTerminalOutput('Memory-optimized version ready!', 'success');
+                addTerminalOutput('✅ Python environment loaded successfully!', 'success');
+                addTerminalOutput('✅ Memory-optimized version ready!', 'success');
+                addTerminalOutput('✅ You can now run Python code!', 'success');
                 addTerminalOutput('');
                 
                 terminalInputLine.style.display = 'flex';
                 terminalInput.focus();
+                
+                // Make pyodide globally accessible for debugging
+                window.pyodide = pyodide;
+                
             } catch (error) {
-                addTerminalOutput('Error loading Python: ' + error.message, 'error');
+                addTerminalOutput('❌ Error loading Python: ' + error.message, 'error');
+                addTerminalOutput('💡 Try refreshing the page or check your internet connection.', 'info');
+                console.error('Pyodide initialization error:', error);
             }
         }
 
@@ -1008,10 +725,10 @@ print(f"Random password: {password}")
             const code = editor.getValue();
             saveFile();
             
-            addTerminalOutput(`\\n>>> Running ${currentFile}...`, 'success');
+            addTerminalOutput(`\\n>>> Running ${window.currentFile}...`, 'success');
             
             try {
-                pyodide.FS.writeFile(`/home/user/${currentFile}`, code);
+                pyodide.FS.writeFile(`/home/user/${window.currentFile}`, code);
                 await pyodide.runPythonAsync(code);
             } catch (error) {
                 addTerminalOutput(error.message, 'error');
@@ -1030,14 +747,14 @@ print(f"Random password: {password}")
                 }
                 
                 if (command.trim() === 'ls') {
-                    const fileList = Array.from(files.keys()).join('\\n');
+                    const fileList = Array.from(window.files.keys()).join('\\n');
                     addTerminalOutput(fileList || 'No files loaded');
                     return;
                 }
                 
                 if (command.trim() === 'memory') {
-                    addTerminalOutput(`Files in memory: ${files.size}`);
-                    addTerminalOutput(`Open tabs: ${openTabs.length}/${maxOpenTabs}`);
+                    addTerminalOutput(`Files in memory: ${window.files.size}`);
+                    addTerminalOutput(`Open tabs: ${window.openTabs.length}/${maxOpenTabs}`);
                     addTerminalOutput(`Terminal lines: ${terminalLineCount}/${maxTerminalLines}`);
                     return;
                 }
@@ -1065,25 +782,25 @@ print(f"Random password: {password}")
                 return;
             }
             
-            if (files.has(fileName)) {
+            if (window.files.has(fileName)) {
                 alert('File already exists');
                 return;
             }
             
-            files.set(fileName, '# ' + fileName + '\\n\\n');
+            window.files.set(fileName, '# ' + fileName + '\\n\\n');
             loadFile(fileName);
             closeModal();
             updateFileTree();
         }
 
         function saveFile() {
-            if (currentFile) {
-                files.set(currentFile, editor.getValue());
-                addTerminalOutput(`Saved ${currentFile}`, 'success');
+            if (window.currentFile) {
+                window.files.set(window.currentFile, editor.getValue());
+                addTerminalOutput(`Saved ${window.currentFile}`, 'success');
                 
                 if (pyodide) {
                     try {
-                        pyodide.FS.writeFile(`/home/user/${currentFile}`, editor.getValue());
+                        pyodide.FS.writeFile(`/home/user/${window.currentFile}`, editor.getValue());
                     } catch (error) {
                         console.error('Error saving to filesystem:', error);
                     }
@@ -1097,16 +814,16 @@ print(f"Random password: {password}")
 
         function closeTab(fileName, event) {
             event.stopPropagation();
-            const index = openTabs.indexOf(fileName);
+            const index = window.openTabs.indexOf(fileName);
             if (index > -1) {
-                openTabs.splice(index, 1);
+                window.openTabs.splice(index, 1);
                 cleanupFile(fileName);
             }
             
-            if (currentFile === fileName && openTabs.length > 0) {
-                loadFile(openTabs[openTabs.length - 1]);
-            } else if (openTabs.length === 0) {
-                currentFile = null;
+            if (window.currentFile === fileName && window.openTabs.length > 0) {
+                loadFile(window.openTabs[window.openTabs.length - 1]);
+            } else if (window.openTabs.length === 0) {
+                window.currentFile = null;
                 editor.setValue('');
                 updateTabs();
                 updateFileTree();
@@ -1117,9 +834,9 @@ print(f"Random password: {password}")
             const tabsContainer = document.getElementById('tabs');
             tabsContainer.innerHTML = '';
             
-            openTabs.forEach(fileName => {
+            window.openTabs.forEach(fileName => {
                 const tab = document.createElement('div');
-                tab.className = 'tab' + (fileName === currentFile ? ' active' : '');
+                tab.className = 'tab' + (fileName === window.currentFile ? ' active' : '');
                 tab.onclick = () => openTab(fileName);
                 
                 tab.innerHTML = `
@@ -1131,21 +848,22 @@ print(f"Random password: {password}")
             });
         }
 
-        function updateFileTree() {
+        // Replace the early updateFileTree function with full implementation
+        window.updateFileTree = function updateFileTree() {
             const fileTree = document.getElementById('file-tree');
             fileTree.innerHTML = '';
             
-            exampleFiles.forEach(fileName => {
+            window.exampleFiles.forEach(fileName => {
                 const li = document.createElement('li');
-                li.className = 'file-item' + (fileName === currentFile ? ' active' : '');
+                li.className = 'file-item' + (fileName === window.currentFile ? ' active' : '');
                 li.onclick = () => loadFile(fileName);
                 
-                const isLoaded = files.has(fileName);
+                const isLoaded = window.files.has(fileName);
                 const icon = isLoaded ? '📄' : '📋';
                 li.innerHTML = `<span class="file-icon">${icon}</span> ${fileName}`;
                 fileTree.appendChild(li);
             });
-        }
+        };
 
         function clearTerminal() {
             terminalOutput.innerHTML = '';
@@ -1206,6 +924,28 @@ print(f"Random password: {password}")
         document.addEventListener('mouseup', () => {
             isResizing = false;
             document.body.style.cursor = 'default';
+        });
+
+        // Initialize file tree immediately on page load with debugging
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOMContentLoaded fired');
+            console.log('exampleFiles available:', !!window.exampleFiles);
+            console.log('exampleTemplates available:', !!window.exampleTemplates);
+            console.log('updateFileTree available:', !!window.updateFileTree);
+            
+            if (window.updateFileTree) {
+                window.updateFileTree();
+                console.log('updateFileTree called');
+            } else {
+                console.error('updateFileTree not available');
+                // Fallback: manually populate file tree
+                setTimeout(function() {
+                    if (window.exampleFiles && window.updateFileTree) {
+                        window.updateFileTree();
+                        console.log('updateFileTree called via fallback');
+                    }
+                }, 1000);
+            }
         });
 
         // Initialize Python when page loads
