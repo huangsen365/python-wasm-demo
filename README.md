@@ -68,3 +68,9 @@ docker rm python-wasm-cli
 - Drag the divider between editor and terminal to resize panels
 - Files persist only during the current session (browser memory)
 - All Python standard library modules are available via Pyodide
+
+## Troubleshooting
+
+If the page shows "Failed to load Pyodide" or "Failed to load Monaco editor",
+ensure your browser can access the CDN resources. A working internet
+connection is required when launching the app.

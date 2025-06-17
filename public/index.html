@@ -79,6 +79,13 @@
         const input = document.getElementById('input');
         const inputLine = document.getElementById('input-line');
 
+        // Warn if Pyodide fails to load after a short delay
+        setTimeout(() => {
+            if (typeof loadPyodide === 'undefined') {
+                addOutput('Failed to load Pyodide. Check your network connection.', 'error');
+            }
+        }, 5000);
+
         function addOutput(text, className = '') {
             const line = document.createElement('div');
             line.textContent = text;
