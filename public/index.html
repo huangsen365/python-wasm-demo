@@ -72,7 +72,7 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/pyodide/v0.24.1/full/pyodide.js"></script>
+    <script src="https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js"></script>
     <script>
         let pyodide;
         const output = document.getElementById('output');
@@ -97,7 +97,7 @@
         async function initPython() {
             try {
                 pyodide = await loadPyodide({
-                    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.24.1/full/"
+                    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.27.7/full/"
                 });
                 
                 // Set up stdout/stderr capture

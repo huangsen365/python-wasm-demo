@@ -37,7 +37,7 @@ This is a browser-based Python development environment using Python compiled to 
 
 **Infrastructure:**
 - Alpine nginx container serves static files
-- Pyodide v0.24.1 provides Python WebAssembly runtime
+- Pyodide v0.27.7 provides Python WebAssembly runtime
 - Virtual filesystem stores files in browser memory at `/home/user`
 - CORS headers and WASM MIME types configured in `nginx/nginx.conf`
 
@@ -90,7 +90,7 @@ The IDE implements several memory optimization strategies:
 **CDN Dependencies:**
 Application requires internet access for:
 - Monaco Editor: `https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/`
-- Pyodide: `https://cdn.jsdelivr.net/pyodide/v0.24.1/full/`
+- Pyodide: `https://cdn.jsdelivr.net/pyodide/v0.27.7/full/`
 
 **Common Issues:**
 - "Failed to load Pyodide" indicates network/CDN access problems

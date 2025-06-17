@@ -324,7 +324,7 @@ print("\n开始你的Python学习之旅吧！Let's start your Python learning jo
                 }
                 
                 pyodide = await loadPyodide({
-                    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.24.1/full/"
+                    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.27.7/full/"
                 });
 
                 addTerminalOutput('Pyodide loaded, setting up environment...', 'info');
