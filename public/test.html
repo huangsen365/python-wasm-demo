@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Examples Loading Test</title>
+    <style>
+        body { font-family: monospace; background: #1e1e1e; color: #d4d4d4; padding: 20px; }
+        .test-result { margin: 10px 0; }
+        .success { color: #4ec9b0; }
+        .error { color: #f44747; }
+        .info { color: #dcdcaa; }
+        iframe { width: 100%; height: 600px; border: 1px solid #3e3e42; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>Examples Loading Test</h1>
+    <div id="test-results"></div>
+    <iframe src="http://localhost:8080/editor.html" id="testFrame"></iframe>
+    
+    <script>
+        const results = document.getElementById('test-results');
+        
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.textContent = message;
+            results.appendChild(div);
+        }
+        
+        function testExamples() {
+            addResult('Starting examples loading test...', 'info');
+            
+            const iframe = document.getElementById('testFrame');
+            
+            iframe.onload = function() {
+                setTimeout(() => {
+                    try {
+                        const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                        
+                        // Check if file tree exists
+                        const fileTree = iframeDoc.getElementById('file-tree');
+                        if (fileTree) {
+                            addResult('✓ File tree container found', 'success');
+                            
+                            const fileItems = fileTree.children.length;
+                            addResult(`✓ File tree has ${fileItems} items`, fileItems > 0 ? 'success' : 'error');
+                            
+                            // List the files in the tree
+                            for (let i = 0; i < fileTree.children.length; i++) {
+                                const item = fileTree.children[i];
+                                addResult(`  - ${item.textContent}`, 'info');
+                            }
+                            
+                            // Check if welcome.py is loaded in editor
+                            const editor = iframe.contentWindow.editor;
+                            if (editor) {
+                                const editorContent = editor.getValue();
+                                if (editorContent.includes('Welcome to Python Online IDE!')) {
+                                    addResult('✓ Welcome.py content loaded in editor', 'success');
+                                } else {
+                                    addResult('✗ Welcome.py content not in editor', 'error');
+                                    addResult('Editor content: ' + editorContent.substring(0, 100) + '...', 'info');
+                                }
+                            } else {
+                                addResult('✗ Monaco editor not accessible', 'error');
+                            }
+                            
+                            // Try clicking on a file
+                            if (fileTree.children.length > 1) {
+                                addResult('Testing file click...', 'info');
+                                const secondFile = fileTree.children[1];
+                                if (secondFile.onclick) {
+                                    secondFile.click();
+                                    setTimeout(() => {
+                                        const newContent = editor ? editor.getValue() : '';
+                                        if (newContent.includes('Hello, World!')) {
+                                            addResult('✓ File click loading works!', 'success');
+                                        } else {
+                                            addResult('✗ File click did not load content', 'error');
+                                        }
+                                    }, 1000);
+                                } else {
+                                    addResult('✗ File items not clickable', 'error');
+                                }
+                            }
+                            
+                        } else {
+                            addResult('✗ File tree container not found', 'error');
+                        }
+                        
+                        // Check console for errors
+                        const logs = iframe.contentWindow.console;
+                        addResult('Check browser console for any JavaScript errors', 'info');
+                        
+                    } catch (error) {
+                        addResult('✗ Error accessing iframe content: ' + error.message, 'error');
+                        addResult('This might be due to CORS restrictions in testing', 'info');
+                    }
+                }, 3000); // Wait 3 seconds for everything to load
+            };
+        }
+        
+        // Start test when page loads
+        testExamples();
+    </script>
+</body>
+</html>

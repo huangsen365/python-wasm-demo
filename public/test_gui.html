@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Examples Loading Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        .test-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .test-section {
+            background-color: #2d2d30;
+            border: 1px solid #3e3e42;
+            border-radius: 5px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .test-result {
+            padding: 8px 12px;
+            margin: 5px 0;
+            border-radius: 3px;
+            font-family: monospace;
+        }
+        .success { background-color: #0e5a2b; color: #4ec9b0; }
+        .error { background-color: #5a1e1e; color: #f44747; }
+        .info { background-color: #2d2d30; color: #dcdcaa; }
+        .warning { background-color: #5a4a1e; color: #d19a66; }
+        
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #3e3e42;
+            border-radius: 5px;
+            background: white;
+        }
+        
+        button {
+            background-color: #0e639c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 3px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        
+        button:hover {
+            background-color: #1177bb;
+        }
+        
+        .test-controls {
+            margin: 20px 0;
+        }
+        
+        h2 {
+            color: #4ec9b0;
+            border-bottom: 1px solid #3e3e42;
+            padding-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🐍 Python WASM Demo - Examples Loading Test</h1>
+        
+        <div class="test-section">
+            <h2>📋 Test Results</h2>
+            <div id="test-results">
+                <div class="test-result info">Starting automated tests...</div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>🎮 Manual Test Controls</h2>
+            <div class="test-controls">
+                <button onclick="runAutomatedTests()">🔄 Run Tests Again</button>
+                <button onclick="testFileClick()">📁 Test File Click</button>
+                <button onclick="testEditorContent()">📝 Check Editor Content</button>
+                <button onclick="clearResults()">🧹 Clear Results</button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h2>🖥️ Application Preview</h2>
+            <iframe src="/editor.html" id="appFrame"></iframe>
+        </div>
+    </div>
+
+    <script>
+        const results = document.getElementById('test-results');
+        let testFrame = null;
+        
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test-result ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong> ${message}`;
+            results.appendChild(div);
+            div.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function clearResults() {
+            results.innerHTML = '<div class="test-result info">Results cleared - ready for new tests</div>';
+        }
+        
+        function runAutomatedTests() {
+            addResult('🚀 Starting automated examples loading tests...', 'info');
+            
+            testFrame = document.getElementById('appFrame');
+            
+            // Test 1: Frame loads
+            setTimeout(() => {
+                try {
+                    addResult('📡 Testing iframe accessibility...', 'info');
+                    
+                    // Try to access iframe content (may fail due to same-origin policy)
+                    try {
+                        const iframeDoc = testFrame.contentDocument || testFrame.contentWindow.document;
+                        if (iframeDoc) {
+                            addResult('✅ Iframe content is accessible', 'success');
+                            testDOMElements(iframeDoc, testFrame.contentWindow);
+                        } else {
+                            addResult('❌ Cannot access iframe content (same-origin policy)', 'error');
+                            testExternalAccess();
+                        }
+                    } catch (e) {
+                        addResult('⚠️ CORS restriction - testing externally: ' + e.message, 'warning');
+                        testExternalAccess();
+                    }
+                } catch (error) {
+                    addResult('❌ Error during test: ' + error.message, 'error');
+                }
+            }, 2000);
+        }
+        
+        function testDOMElements(iframeDoc, iframeWindow) {
+            addResult('🔍 Testing DOM elements in iframe...', 'info');
+            
+            // Wait a moment for any initialization to complete
+            setTimeout(() => {
+                // Test file tree
+                const fileTree = iframeDoc.getElementById('file-tree');
+                if (fileTree) {
+                    addResult(`✅ File tree found with ${fileTree.children.length} items`, 'success');
+                    
+                    // If file tree is empty, try to trigger updateFileTree
+                    if (fileTree.children.length === 0 && iframeWindow.updateFileTree) {
+                        addResult('🔄 File tree empty, triggering updateFileTree...', 'info');
+                        try {
+                            iframeWindow.updateFileTree();
+                            setTimeout(() => {
+                                addResult(`📊 After updateFileTree: ${fileTree.children.length} items`, 'info');
+                            }, 500);
+                        } catch (error) {
+                            addResult('❌ Error calling updateFileTree: ' + error.message, 'error');
+                        }
+                    }
+                    
+                    // List files
+                    for (let i = 0; i < Math.min(5, fileTree.children.length); i++) {
+                        const item = fileTree.children[i];
+                        addResult(`📄 File ${i + 1}: ${item.textContent}`, 'info');
+                    }
+                    
+                    if (fileTree.children.length > 5) {
+                        addResult(`📁 ...and ${fileTree.children.length - 5} more files`, 'info');
+                    }
+                } else {
+                    addResult('❌ File tree not found', 'error');
+                }
+            }, 500); // Wait 500ms for initialization
+            
+            // Test sidebar
+            const sidebar = iframeDoc.getElementById('sidebar');
+            if (sidebar) {
+                addResult('✅ Sidebar element found', 'success');
+            } else {
+                addResult('❌ Sidebar element missing', 'error');
+            }
+            
+            // Test editor
+            const editor = iframeDoc.getElementById('editor');
+            if (editor) {
+                addResult('✅ Editor container found', 'success');
+            } else {
+                addResult('❌ Editor container missing', 'error');
+            }
+            
+            // Test JavaScript variables with retry for templates
+            if (iframeWindow.exampleFiles) {
+                addResult(`✅ exampleFiles array found with ${iframeWindow.exampleFiles.length} items`, 'success');
+            } else {
+                addResult('❌ exampleFiles array not found', 'error');
+            }
+            
+            function checkTemplates(attempt = 1) {
+                if (iframeWindow.exampleTemplates) {
+                    const templateCount = Object.keys(iframeWindow.exampleTemplates).length;
+                    if (templateCount > 0) {
+                        addResult(`✅ exampleTemplates object found with ${templateCount} templates`, 'success');
+                        
+                        // List first few templates
+                        const templateNames = Object.keys(iframeWindow.exampleTemplates);
+                        templateNames.slice(0, 3).forEach(name => {
+                            addResult(`   📄 Template: ${name}`, 'info');
+                        });
+                        if (templateNames.length > 3) {
+                            addResult(`   📁 ...and ${templateNames.length - 3} more templates`, 'info');
+                        }
+                    } else if (attempt < 5) {
+                        addResult(`⏳ exampleTemplates empty, retrying... (attempt ${attempt})`, 'warning');
+                        setTimeout(() => checkTemplates(attempt + 1), 1000);
+                    } else {
+                        addResult('❌ exampleTemplates object found but remains empty after retries', 'error');
+                    }
+                } else {
+                    addResult('❌ exampleTemplates object not found', 'error');
+                }
+            }
+            
+            checkTemplates();
+            
+            // Test functions
+            if (typeof iframeWindow.loadFile === 'function') {
+                addResult('✅ loadFile function found', 'success');
+            } else {
+                addResult('❌ loadFile function missing', 'error');
+            }
+            
+            if (typeof iframeWindow.updateFileTree === 'function') {
+                addResult('✅ updateFileTree function found', 'success');
+            } else {
+                addResult('❌ updateFileTree function missing', 'error');
+            }
+        }
+        
+        function testExternalAccess() {
+            addResult('🌐 Testing external HTTP requests...', 'info');
+            
+            fetch('/editor.html')
+                .then(response => response.text())
+                .then(html => {
+                    addResult('✅ Successfully fetched editor.html', 'success');
+                    
+                    // Test for examples in HTML
+                    if (html.includes('exampleFiles')) {
+                        addResult('✅ exampleFiles found in HTML source', 'success');
+                    } else {
+                        addResult('❌ exampleFiles not found in HTML source', 'error');
+                    }
+                    
+                    if (html.includes('Welcome to Python Online IDE!')) {
+                        addResult('✅ Welcome content found in HTML source', 'success');
+                    } else {
+                        addResult('❌ Welcome content not found in HTML source', 'error');
+                    }
+                    
+                    if (html.includes("addEventListener('DOMContentLoaded'")) {
+                        addResult('✅ DOMContentLoaded fix found in HTML source', 'success');
+                    } else {
+                        addResult('❌ DOMContentLoaded fix not found in HTML source', 'error');
+                    }
+                })
+                .catch(error => {
+                    addResult('❌ Failed to fetch editor.html: ' + error.message, 'error');
+                });
+        }
+        
+        function testFileClick() {
+            addResult('🖱️ Testing file click simulation...', 'info');
+            try {
+                const iframeDoc = testFrame.contentDocument || testFrame.contentWindow.document;
+                const fileTree = iframeDoc.getElementById('file-tree');
+                
+                if (fileTree && fileTree.children.length > 1) {
+                    const secondFile = fileTree.children[1];
+                    addResult(`📁 Attempting to click: ${secondFile.textContent}`, 'info');
+                    
+                    if (secondFile.onclick) {
+                        secondFile.click();
+                        addResult('✅ File click simulated successfully', 'success');
+                        
+                        setTimeout(() => {
+                            testEditorContent();
+                        }, 1000);
+                    } else {
+                        addResult('❌ File has no click handler', 'error');
+                    }
+                } else {
+                    addResult('❌ No files available to click', 'error');
+                }
+            } catch (error) {
+                addResult('❌ Cannot simulate click: ' + error.message, 'error');
+            }
+        }
+        
+        function testEditorContent() {
+            addResult('📝 Testing editor content...', 'info');
+            try {
+                const iframeWindow = testFrame.contentWindow;
+                
+                if (iframeWindow.editor && typeof iframeWindow.editor.getValue === 'function') {
+                    const content = iframeWindow.editor.getValue();
+                    if (content && content.trim().length > 0) {
+                        addResult(`✅ Editor has content (${content.length} characters)`, 'success');
+                        addResult(`📖 Content preview: "${content.substring(0, 100)}..."`, 'info');
+                    } else {
+                        addResult('⚠️ Editor appears empty', 'warning');
+                    }
+                } else {
+                    addResult('❌ Editor not accessible or no getValue method', 'error');
+                }
+                
+                if (iframeWindow.currentFile) {
+                    addResult(`✅ Current file: ${iframeWindow.currentFile}`, 'success');
+                } else {
+                    addResult('⚠️ No current file set', 'warning');
+                }
+                
+                if (iframeWindow.files && iframeWindow.files.size > 0) {
+                    addResult(`✅ Files in memory: ${iframeWindow.files.size}`, 'success');
+                } else {
+                    addResult('⚠️ No files loaded in memory', 'warning');
+                }
+                
+            } catch (error) {
+                addResult('❌ Cannot access editor: ' + error.message, 'error');
+            }
+        }
+        
+        // Auto-start tests when page loads
+        window.addEventListener('load', () => {
+            setTimeout(runAutomatedTests, 1000);
+        });
+    </script>
+</body>
+</html>
