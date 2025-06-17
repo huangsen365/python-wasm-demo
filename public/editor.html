@@ -361,19 +361,7 @@
         window.currentFile = null;
         window.files = new Map();
         window.openTabs = [];
-        window.exampleFiles = [
-            'welcome.py',
-            '01_hello_world.py',
-            '02_variables.py',
-            '03_lists.py',
-            '04_dictionaries.py',
-            '05_control_flow.py',
-            '06_loops.py',
-            '07_functions.py',
-            '08_classes.py',
-            '09_errors.py',
-            '10_modules.py'
-        ];
+        window.exampleFiles = []; // Will be populated dynamically by loadExampleFiles()
         
         // exampleTemplates will be initialized later with full content
         
@@ -418,64 +406,151 @@
         const terminalInputLine = document.getElementById('terminal-input-line');
         const memoryInfo = document.getElementById('memory-info');
 
-        // Example files list already initialized at top of script
-
-        // Load templates with proper formatting
+        // Initialize global variables immediately and ensure they're available
         window.exampleTemplates = {};
+        window.exampleFiles = [];
+        window.files = new Map();
+        window.openTabs = [];
+        window.currentFile = null;
         
-        // Helper function to create properly formatted templates
-        function addTemplate(name, content) {
-            window.exampleTemplates[name] = content.replace(/\\n/g, '\n');
-        }
-        window.exampleTemplates['welcome.py'] = `# 欢迎来到Python在线编程环境！🐍
+        console.log('🚀 JavaScript initializing - global variables set');
+        
+        // Immediately available stub functions to prevent "not found" errors
+        window.loadFile = function(filename) {
+            console.log('loadFile called early:', filename, '- will retry when templates are loaded');
+            // If templates are loaded, defer to the full implementation
+            if (window.exampleTemplates[filename]) {
+                window.loadFile = window.loadFileReal || window.loadFile;
+                return window.loadFile(filename);
+            }
+            // Otherwise, try again after a short delay
+            setTimeout(() => window.loadFile(filename), 1000);
+        };
+        
+        window.updateFileTree = function() {
+            console.log('updateFileTree called early - will update when files are loaded');
+            const fileTree = document.getElementById('file-tree');
+            if (fileTree) {
+                if (window.exampleFiles.length === 0) {
+                    fileTree.innerHTML = '<li style="color: #888; padding: 10px;">Loading examples...</li>';
+                } else {
+                    // Defer to real implementation if available
+                    if (window.updateFileTreeReal) {
+                        return window.updateFileTreeReal();
+                    }
+                    // Basic implementation
+                    fileTree.innerHTML = '';
+                    window.exampleFiles.forEach(fileName => {
+                        const li = document.createElement('li');
+                        li.className = 'file-item';
+                        li.onclick = () => window.loadFile(fileName);
+                        li.innerHTML = `<span class="file-icon">📄</span> ${fileName}`;
+                        fileTree.appendChild(li);
+                    });
+                }
+            }
+        };
+        
+        // Make these immediately available for tests
+        window.globalReady = true;
+        
+        // Dynamic loading of Python example files
+        async function loadExampleFiles() {
+            const exampleFilesList = [
+                'welcome.py',
+                '01_hello_world.py', 
+                '02_variables.py',
+                '03_lists.py',
+                '04_dictionaries.py',
+                '05_control_flow.py',
+                '06_loops.py',
+                '07_functions.py',
+                '08_classes.py',
+                '09_errors.py',
+                '10_modules.py'
+            ];
+            
+            console.log('🔄 Loading Python example files...');
+            
+            let loadedCount = 0;
+            let failedFiles = [];
+            
+            for (const filename of exampleFilesList) {
+                try {
+                    console.log(`📡 Fetching: /examples/${filename}`);
+                    const response = await fetch(`/examples/${filename}`);
+                    
+                    if (response.ok) {
+                        const content = await response.text();
+                        if (content && content.trim().length > 0) {
+                            window.exampleTemplates[filename] = content;
+                            loadedCount++;
+                            console.log(`✅ Loaded: ${filename} (${content.length} chars)`);
+                        } else {
+                            console.warn(`⚠️ Empty content for: ${filename}`);
+                            failedFiles.push(filename);
+                        }
+                    } else {
+                        console.error(`❌ HTTP ${response.status} for: ${filename}`);
+                        failedFiles.push(filename);
+                    }
+                } catch (error) {
+                    console.error(`❌ Network error loading ${filename}:`, error.message);
+                    failedFiles.push(filename);
+                }
+            }
+            
+            console.log(`📊 Loading complete: ${loadedCount}/${exampleFilesList.length} files loaded`);
+            
+            if (failedFiles.length > 0) {
+                console.warn(`⚠️ Failed files:`, failedFiles);
+                
+                // Fallback: create minimal templates for failed files
+                failedFiles.forEach(filename => {
+                    if (!window.exampleTemplates[filename]) {
+                        window.exampleTemplates[filename] = `# ${filename}\n# This file could not be loaded from the server\n# Please check the server configuration\n\nprint("Hello from ${filename}")`;
+                        console.log(`🔧 Created fallback template for: ${filename}`);
+                    }
+                });
+            }
+            
+            // Ensure we have at least one file available
+            if (Object.keys(window.exampleTemplates).length === 0) {
+                console.log('🆘 No files available, creating emergency welcome file');
+                window.exampleTemplates['welcome.py'] = `# 欢迎来到Python在线编程环境！
 # Welcome to Python Online IDE!
 
-# 这是一个完全在浏览器中运行的Python开发环境
-# This is a Python development environment that runs entirely in your browser
+print("你好，世界！")  # Hello, World! in Chinese
+print("Hello, World!")
 
-print("🎉 欢迎学习Python编程！")
-print("Welcome to Python Programming!")
-print("您的编程学习之旅从这里开始！")
-print("Your programming journey begins here!")
-
-# 试着修改下面的代码，然后点击"运行"按钮看看效果
-# Try modifying the code below, then click the "Run" button to see the result
-name = "您的姓名"  # 请把"您的姓名"改成你的真实姓名！
-print(f"你好，{name}！祝你编程愉快！🚀")
-
-# 学习建议：
-# Learning tips:
-# 1. 点击左侧文件列表中的其他示例文件来学习更多Python概念
-#    Click on other example files in the left sidebar to learn more Python concepts
-# 2. 每个文件都包含详细的中文注释和说明
-#    Each file contains detailed Chinese comments and explanations  
-# 3. 尝试修改代码并运行，这是学习编程的最好方法
-#    Try modifying the code and running it - this is the best way to learn programming
-# 4. 如果遇到错误，仔细阅读终端中的错误信息
-#    If you encounter errors, carefully read the error messages in the terminal
-
-print("\n开始你的Python学习之旅吧！Let's start your Python learning journey!")`;
-        addTemplate('01_hello_world.py', '# 第一课：Python基础和Hello World程序\\n# 这是你的第一个Python程序\\n\\nprint(\\\"Hello, World!\\\")\\nprint(\\\"你好，世界!\\\")\\n\\n# 使用变量\\nname = \\\"Python学习者\\\"\\nprint(f\\\"你好，{name}!\\\")\\n\\n# Python可以做数学计算\\nprint(f\\\"2 + 2 = {2 + 2}\\\")\\nprint(f\\\"10 - 3 = {10 - 3}\\\")\\nprint(f\\\"4 * 5 = {4 * 5}\\\")\\nprint(f\\\"15 / 3 = {15 / 3}\\\")');
-        
-        addTemplate('02_variables.py', '# 第二课：变量和数据类型\\n# Variables and Data Types\\n\\n# 数字\\nage = 25\\nheight = 1.75\\nprint(f\\\"年龄: {age}岁\\\")\\nprint(f\\\"身高: {height}米\\\")\\n\\n# 文字\\nname = \\\"张三\\\"\\ncity = \\\"北京\\\"\\nprint(f\\\"姓名: {name}\\\")\\nprint(f\\\"城市: {city}\\\")\\n\\n# 布尔值\\nis_student = True\\nprint(f\\\"是学生吗: {is_student}\\\")');
-        
-        addTemplate('03_lists.py', '# 第三课：列表\\n# Lists in Python\\n\\n# 创建列表\\nfruits = [\\\"苹果\\\", \\\"香蕉\\\", \\\"橙子\\\"]\\nnumbers = [1, 2, 3, 4, 5]\\n\\nprint(\\\"水果列表:\\\", fruits)\\nprint(\\\"数字列表:\\\", numbers)\\n\\n# 访问元素\\nprint(f\\\"第一个水果: {fruits[0]}\\\")\\nprint(f\\\"最后一个水果: {fruits[-1]}\\\")\\n\\n# 添加元素\\nfruits.append(\\\"葡萄\\\")\\nprint(\\\"添加后:\\\", fruits)\\n\\n# 遍历列表\\nfor fruit in fruits:\\n    print(f\\\"水果: {fruit}\\\")');
-        
-        addTemplate('04_dictionaries.py', '# 第四课：字典 - 键值对数据结构\\n# Lesson 4: Dictionaries - Key-Value Data Structure\\n\\n# 字典是一种存储键值对的数据结构，就像现实中的字典一样\\n# Dictionaries store key-value pairs, just like a real dictionary\\n\\n# 1. 创建字典\\n# ==========\\n\\n# 个人信息字典\\nperson = {\\n    "姓名": "张三",\\n    "年龄": 25,\\n    "城市": "北京",\\n    "职业": "程序员"\\n}\\n\\nprint("个人信息:", person)\\nprint("Person info:", person)\\n\\n# 2. 访问字典中的值\\n# ===============\\n\\nprint("\\\\n=== 访问字典值 ===")\\nprint(f"姓名: {person[\\"姓名\\"]}")\\nprint(f"年龄: {person[\\"年龄\\"]}岁")\\nprint(f"城市: {person[\\"城市\\"]}")\\n\\n# 使用get()方法更安全地访问（如果键不存在不会报错）\\nprint(f"职业: {person.get(\\"职业\\", \\"未知\\")}")\\nprint(f"薪资: {person.get(\\"薪资\\", \\"未设置\\")}")  # 这个键不存在\\n\\n# 3. 修改和添加值\\n# =============\\n\\nprint("\\\\n=== 修改字典 ===")\\n# 修改现有的值\\nperson[\\"年龄\\"] = 26\\nprint("生日后年龄:", person[\\"年龄\\"])\\n\\n# 添加新的键值对\\nperson[\\"邮箱\\"] = \\"zhangsan@example.com\\"\\nperson[\\"爱好\\"] = [\\"编程\\", \\"阅读\\", \\"运动\\"]\\nprint("添加邮箱和爱好后:", person)\\n\\n# 4. 删除字典元素\\n# =============\\n\\nprint("\\\\n=== 删除元素 ===")\\n# 使用del删除\\nif \\"职业\\" in person:\\n    del person[\\"职业\\"]\\n    print("删除职业后:", person)\\n\\n# 使用pop()删除并返回值\\nremoved_hobby = person.pop(\\"爱好\\", \\"没有这个键\\")\\nprint(f"删除的爱好: {removed_hobby}")\\n\\n# 5. 字典的常用方法\\n# ===============\\n\\nprint("\\\\n=== 字典信息 ===")\\nprint(f"字典长度: {len(person)}个项目")\\nprint(f"所有键: {list(person.keys())}")\\nprint(f"所有值: {list(person.values())}")\\nprint(f"所有键值对: {list(person.items())}")\\n\\n# 6. 遍历字典\\n# ==========\\n\\nprint("\\\\n=== 遍历字典 ===")\\n# 遍历键\\nprint("所有键:")\\nfor key in person:\\n    print(f"  - {key}")\\n\\n# 遍历值\\nprint("\\\\n所有值:")\\nfor value in person.values():\\n    print(f"  - {value}")\\n\\n# 遍历键值对\\nprint("\\\\n键值对:")\\nfor key, value in person.items():\\n    print(f"  {key}: {value}")\\n\\n# 7. 嵌套字典\\n# ==========\\n\\nprint("\\\\n=== 嵌套字典 ===")\\nstudents = {\\n    \\"学生1\\": {\\n        \\"姓名\\": \\"李四\\",\\n        \\"年龄\\": 20,\\n        \\"成绩\\": {\\"语文\\": 85, \\"数学\\": 92, \\"英语\\": 78}\\n    },\\n    \\"学生2\\": {\\n        \\"姓名\\": \\"王五\\",\\n        \\"年龄\\": 21,\\n        \\"成绩\\": {\\"语文\\": 90, \\"数学\\": 88, \\"英语\\": 95}\\n    }\\n}\\n\\nprint("班级信息:")\\nfor student_id, info in students.items():\\n    name = info[\\"姓名\\"]\\n    age = info[\\"年龄\\"]\\n    math_score = info[\\"成绩\\"][\\"数学\\"]\\n    print(f"  {student_id}: {name}，{age}岁，数学成绩：{math_score}分")\\n\\n# 8. 练习题\\n# ========\\nprint("\\\\n=== 练习时间 ===")\\n# 创建你自己的个人档案字典\\nmy_profile = {\\n    \\"姓名\\": \\"你的名字\\",\\n    \\"年龄\\": 18,\\n    \\"城市\\": \\"你的城市\\",\\n    \\"爱好\\": [\\"编程\\", \\"学习\\"]\\n}\\n\\nprint("我的档案:", my_profile)\\n\\n# 挑战：添加更多信息到你的档案中，比如学校、专业等');
-        
-        addTemplate('05_control_flow.py', '# 第五课：条件控制 - 让程序做决定\\n# Lesson 5: Control Flow - Making Decisions\\n\\n# 条件语句让程序根据不同情况执行不同的代码\\n# Conditional statements allow programs to execute different code based on conditions\\n\\n# 1. 基本if语句\\n# ===========\\n\\nprint("=== 基本条件判断 ===")\\nage = 18\\nprint(f"年龄: {age}岁")\\n\\nif age >= 18:\\n    print("你已经成年了！")\\n    print("You are an adult!")\\nelse:\\n    print("你还未成年")\\n    print("You are a minor")\\n\\n# 2. 多重条件 (elif)\\n# ================\\n\\nprint("\\\\n=== 成绩等级判断 ===")\\nscore = 85\\nprint(f"考试成绩: {score}分")\\n\\nif score >= 90:\\n    grade = "优秀"\\n    comment = "太棒了！"\\nelif score >= 80:\\n    grade = "良好"\\n    comment = "不错哦！"\\nelif score >= 70:\\n    grade = "中等"\\n    comment = "还需努力"\\nelif score >= 60:\\n    grade = "及格"\\n    comment = "刚好及格"\\nelse:\\n    grade = "不及格"\\n    comment = "需要加油！"\\n\\nprint(f"等级: {grade} - {comment}")\\n\\n# 3. 复合条件\\n# ==========\\n\\nprint("\\\\n=== 天气建议 ===")\\ntemperature = 25  # 温度\\nis_sunny = True   # 是否晴天\\nis_weekend = True # 是否周末\\n\\nprint(f"温度: {temperature}°C")\\nprint(f"晴天: {is_sunny}")\\nprint(f"周末: {is_weekend}")\\n\\n# 使用and (并且)\\nif temperature > 20 and is_sunny:\\n    print("天气很好，适合出门！")\\n\\n# 使用or (或者)\\nif temperature > 30 or temperature < 10:\\n    print("温度比较极端")\\n\\n# 使用and连接多个条件\\nif temperature > 15 and is_sunny and is_weekend:\\n    print("完美的周末！去公园走走吧！")\\nelif is_weekend:\\n    print("虽然是周末，但天气一般")\\nelse:\\n    print("工作日，专心工作吧")\\n\\n# 4. 使用not (非)\\n# =============\\n\\nprint("\\\\n=== 登录检查 ===")\\nhas_account = True\\nremember_password = False\\n\\nif has_account and not remember_password:\\n    print("有账号但忘记密码了，请重置密码")\\nelif not has_account:\\n    print("没有账号，请先注册")\\nelse:\\n    print("欢迎登录！")\\n\\n# 5. 使用in操作符\\n# =============\\n\\nprint("\\\\n=== 喜好检查 ===")\\nfavorite_colors = ["红色", "蓝色", "绿色"]\\nuser_color = "蓝色"\\n\\nif user_color in favorite_colors:\\n    print(f"{user_color}是我喜欢的颜色之一！")\\nelse:\\n    print(f"{user_color}不是我喜欢的颜色")\\n\\n# 6. 嵌套条件\\n# ==========\\n\\nprint("\\\\n=== 购物折扣 ===")\\nis_member = True\\npurchase_amount = 150\\n\\nif is_member:\\n    print("你是会员！")\\n    if purchase_amount >= 100:\\n        discount = 0.2  # 20%折扣\\n        print("购买满100元，享受20%会员折扣！")\\n    else:\\n        discount = 0.1  # 10%折扣\\n        print("会员享受10%折扣")\\nelse:\\n    print("不是会员")\\n    if purchase_amount >= 200:\\n        discount = 0.05  # 5%折扣\\n        print("购买满200元，享受5%折扣")\\n    else:\\n        discount = 0\\n        print("无折扣")\\n\\nfinal_price = purchase_amount * (1 - discount)\\nprint(f"原价: {purchase_amount}元")\\nprint(f"最终价格: {final_price}元")\\n\\n# 7. 实际应用示例\\n# =============\\n\\nprint("\\\\n=== 学生信息系统 ===")\\nstudent_age = 16\\nstudent_grade = 88\\nhas_homework = False\\n\\nprint(f"学生年龄: {student_age}岁")\\nprint(f"考试成绩: {student_grade}分")\\nprint(f"完成作业: {has_homework}")\\n\\n# 综合判断\\nif student_age < 18:\\n    print("未成年学生")\\n    if student_grade >= 85 and has_homework:\\n        print("优秀学生，给予表扬！")\\n    elif student_grade >= 85:\\n        print("成绩优秀，但要记得完成作业")\\n    elif has_homework:\\n        print("作业完成良好，继续加油提高成绩")\\n    else:\\n        print("需要更加努力学习")\\nelse:\\n    print("成年学生，要更加自觉")\\n\\n# 8. 练习题\\n# ========\\nprint("\\\\n=== 练习时间 ===")\\n# 创建一个简单的计算器\\nnum1 = 10\\nnum2 = 3\\noperation = "+"  # 可以改成 "-", "*", "/"\\n\\nprint(f"计算: {num1} {operation} {num2}")\\n\\nif operation == "+":\\n    result = num1 + num2\\nelif operation == "-":\\n    result = num1 - num2\\nelif operation == "*":\\n    result = num1 * num2\\nelif operation == "/":\\n    if num2 != 0:\\n        result = num1 / num2\\n    else:\\n        result = "错误：不能除以0"\\nelse:\\n    result = "未知操作"\\n\\nprint(f"结果: {result}")\\n\\n# 挑战：创建一个年龄分组程序，根据年龄判断是儿童、青少年、成年人还是老年人');
-        
-        addTemplate('06_loops.py', '# Loops - Repeating Actions\\n# for and while loops\\n\\n# For loop with range\\nprint("Counting to 5:")\\nfor i in range(1, 6):\\n    print(f"  Count: {i}")\\n\\n# For loop with list\\ncolors = ["red", "green", "blue", "yellow"]\\nprint("Colors:")\\nfor color in colors:\\n    print(f"  - {color.upper()}")\\n\\n# While loop\\ncount = 3\\nwhile count > 0:\\n    print(f"  {count}...")\\n    count -= 1\\nprint("  Done!")');
-        
-        addTemplate('07_functions.py', '# 第七课：函数 - 可重用的代码块\\n# Lesson 7: Functions - Reusable Code Blocks\\n\\n# 简单函数定义 Simple function definition\\ndef greet(name):\\n    """问候函数，返回问候消息 Greeting function that returns a greeting message"""\\n    return f"你好, {name}!" # Hello in Chinese\\n\\n# 调用函数 Call the function\\nmessage = greet("小明") # Xiao Ming (common Chinese name)\\nprint(message)\\n\\n# 带多个参数的函数 Function with multiple parameters\\ndef calculate_area(length, width):\\n    """计算矩形面积 Calculate rectangle area"""\\n    area = length * width\\n    return area\\n\\n# 计算房间面积 Calculate room area\\nroom_area = calculate_area(10, 12)\\nprint(f"房间面积: {room_area} 平方米") # Room area in square meters\\n\\n# 带默认参数的函数 Function with default parameters\\ndef introduce(name, age=0):\\n    """自我介绍函数 Self-introduction function"""\\n    if age > 0:\\n        return f"大家好，我是{name}，{age}岁" # Hello everyone, I am...\\n    return f"大家好，我是{name}" # Hello everyone, I am...\\n\\n# 测试默认参数 Test default parameters\\nprint(introduce("小红")) # Without age\\nprint(introduce("小李", 25)) # With age');
-        
-        addTemplate('08_classes.py', '# 第八课：类和对象 - 面向对象编程\\n# Lesson 8: Classes and Objects - Object-Oriented Programming\\n\\n# 类定义 - 创建自己的数据类型\\n# Class definition - creating your own data type\\nclass Dog:\\n    """狗类 - 用来创建狗对象 Dog class - for creating dog objects"""\\n    \\n    def __init__(self, name, age, breed="未知"):\\n        """初始化方法 - 创建新狗对象时调用 Initialization method"""\\n        self.name = name     # 狗的名字 Dog name\\n        self.age = age       # 狗的年龄 Dog age\\n        self.breed = breed   # 狗的品种 Dog breed\\n        print(f"创建了一只叫{name}的狗！") # Created a dog named...\\n    \\n    def bark(self):\\n        """叫的方法 Barking method"""\\n        return f"{self.name}汪汪叫：汪汪！" # Dog barking\\n    \\n    def describe(self):\\n        """描述方法 Description method"""\\n        return f"{self.name}是一只{self.age}岁的{self.breed}"\\n        \\n    def birthday(self):\\n        """生日方法 - 年龄增加1 Birthday method - age increases by 1"""\\n        self.age += 1\\n        return f"{self.name}过生日了！现在{self.age}岁了！"\\n\\n# 创建对象实例 Create object instances\\nprint("=== 创建狗对象 ===")\\nmy_dog = Dog("小白", 3, "金毛") # Xiao Bai, Golden Retriever\\nprint(my_dog.describe())\\nprint(my_dog.bark())\\n\\n# 另一只狗 Another dog\\nother_dog = Dog("小黑", 5, "拉布拉多") # Xiao Hei, Labrador\\nprint(other_dog.describe())\\n\\n# 调用方法 Call methods\\nprint("\\\\n=== 狗的生日 ===")\\nprint(my_dog.birthday())\\nprint(my_dog.describe())\\n\\n# 人类类示例 Human class example\\nclass Person:\\n    """人类 Human class"""\\n    \\n    def __init__(self, name, age, job="学生"):\\n        self.name = name\\n        self.age = age\\n        self.job = job\\n        self.pets = []  # 宠物列表 Pet list\\n    \\n    def introduce(self):\\n        return f"我叫{self.name}，{self.age}岁，职业是{self.job}"\\n    \\n    def adopt_pet(self, pet):\\n        """收养宠物 Adopt a pet"""\\n        self.pets.append(pet)\\n        return f"{self.name}收养了{pet.name}！"\\n\\nprint("\\\\n=== 人和宠物 ===")\\nowner = Person("小明", 25, "程序员") # Xiao Ming, programmer\\nprint(owner.introduce())\\nprint(owner.adopt_pet(my_dog))\\nprint(f"{owner.name}有{len(owner.pets)}只宠物")');
-        
-        addTemplate('09_errors.py', '# 第九课：错误处理 - 优雅地处理问题\\n# Lesson 9: Error Handling - Gracefully Dealing with Problems\\n\\n# 错误处理让程序在遇到问题时不会崩溃\\n# Error handling prevents programs from crashing when problems occur\\n\\nprint("=== 基本错误处理 ===")\\n\\n# 1. 基本try-except结构\\n# Basic try-except structure\\ndef safe_divide(a, b):\\n    \"\"\"安全除法函数 Safe division function\"\"\"\\n    try:\\n        result = a / b\\n        return f\"{a} ÷ {b} = {result}\"\\n    except ZeroDivisionError:\\n        return f\"错误：不能除以零！Cannot divide by zero!\"\\n\\nprint(\"测试除法：\")\\nprint(safe_divide(10, 2))  # 正常情况\\nprint(safe_divide(10, 0))  # 错误情况\\n\\nprint(\"\\\\n=== 多种错误类型处理 ===")\\n\\n# 2. 处理多种错误类型\\n# Handling multiple error types\\ndef safe_convert_and_calc(value1, value2, operation):\\n    \"\"\"安全的转换和计算函数\"\"\"\\n    try:\\n        # 尝试转换为数字\\n        num1 = float(value1)\\n        num2 = float(value2)\\n        \\n        # 根据操作符计算\\n        if operation == \"+\":\\n            result = num1 + num2\\n        elif operation == \"-\":\\n            result = num1 - num2\\n        elif operation == \"*\":\\n            result = num1 * num2\\n        elif operation == \"/\":\\n            if num2 == 0:\\n                raise ZeroDivisionError(\"除数不能为零\")\\n            result = num1 / num2\\n        else:\\n            raise ValueError(f\"不支持的操作符: {operation}\")\\n            \\n        return f\"{value1} {operation} {value2} = {result}\"\\n        \\n    except ValueError as e:\\n        return f\"数值错误：{e}\"\\n    except ZeroDivisionError as e:\\n        return f\"除法错误：{e}\"\\n    except Exception as e:\\n        return f\"未知错误：{e}\"\\n\\nprint(\"测试计算器：\")\\nprint(safe_convert_and_calc(\"10\", \"5\", \"+\"))    # 正常\\nprint(safe_convert_and_calc(\"abc\", \"5\", \"+\"))   # 数值错误\\nprint(safe_convert_and_calc(\"10\", \"0\", \"/\"))    # 除零错误\\nprint(safe_convert_and_calc(\"10\", \"5\", \"^\"))    # 操作符错误\\n\\nprint(\"\\\\n=== 文件操作错误处理 ===")\\n\\n# 3. 文件操作错误处理（模拟）\\n# File operation error handling (simulated)\\ndef read_config(filename):\\n    \"\"\"读取配置文件（模拟）\"\"\"\\n    try:\\n        # 模拟文件读取\\n        if filename == \"config.txt\":\\n            return {\"name\": \"应用程序\", \"version\": \"1.0\"}\\n        elif filename == \"missing.txt\":\\n            raise FileNotFoundError(f\"文件 {filename} 不存在\")\\n        elif filename == \"corrupted.txt\":\\n            raise PermissionError(f\"没有权限读取 {filename}\")\\n        else:\\n            raise ValueError(f\"不支持的文件格式: {filename}\")\\n            \\n    except FileNotFoundError as e:\\n        return f\"文件错误：{e}\"\\n    except PermissionError as e:\\n        return f\"权限错误：{e}\"\\n    except Exception as e:\\n        return f\"其他错误：{e}\"\\n\\nprint(\"测试文件读取：\")\\nprint(read_config(\"config.txt\"))     # 成功\\nprint(read_config(\"missing.txt\"))    # 文件不存在\\nprint(read_config(\"corrupted.txt\"))  # 权限错误\\n\\nprint(\"\\\\n=== 用户输入验证 ===")\\n\\n# 4. 用户输入验证\\n# User input validation\\ndef validate_age(age_str):\\n    \"\"\"验证年龄输入\"\"\"\\n    try:\\n        age = int(age_str)\\n        \\n        if age < 0:\\n            raise ValueError(\"年龄不能为负数\")\\n        elif age > 150:\\n            raise ValueError(\"年龄不能超过150岁\")\\n        elif age == 0:\\n            return \"刚出生的婴儿\"\\n        elif age < 18:\\n            return f\"{age}岁，未成年人\"\\n        elif age < 60:\\n            return f\"{age}岁，成年人\"\\n        else:\\n            return f\"{age}岁，老年人\"\\n            \\n    except ValueError as e:\\n        if \"invalid literal\" in str(e):\\n            return f\"输入错误：请输入数字，不是文字\"\\n        else:\\n            return f\"年龄错误：{e}\"\\n\\nprint(\"测试年龄验证：\")\\ntest_ages = [\"25\", \"abc\", \"-5\", \"200\", \"0\", \"16\", \"65\"]\\nfor age in test_ages:\\n    print(f\"输入 \\\"{age}\\\": {validate_age(age)}\")\\n\\nprint(\"\\\\n=== 网络请求错误处理（模拟）===")\\n\\n# 5. 网络请求错误处理（模拟）\\n# Network request error handling (simulated)\\nimport random\\n\\ndef simulate_api_request(url):\\n    \"\"\"模拟API请求\"\"\"\\n    try:\\n        # 模拟不同的网络情况\\n        random_result = random.choice([\"success\", \"timeout\", \"not_found\", \"server_error\"])\\n        \\n        if random_result == \"success\":\\n            return {\"status\": \"成功\", \"data\": \"API数据\"}\\n        elif random_result == \"timeout\":\\n            raise TimeoutError(\"请求超时\")\\n        elif random_result == \"not_found\":\\n            raise FileNotFoundError(\"API接口不存在\")\\n        else:\\n            raise ConnectionError(\"服务器内部错误\")\\n            \\n    except TimeoutError:\\n        return {\"status\": \"错误\", \"message\": \"网络超时，请稍后重试\"}\\n    except FileNotFoundError:\\n        return {\"status\": \"错误\", \"message\": \"API接口未找到\"}\\n    except ConnectionError:\\n        return {\"status\": \"错误\", \"message\": \"服务器连接失败\"}\\n    except Exception as e:\\n        return {\"status\": \"错误\", \"message\": f\"未知网络错误: {e}\"}\\n\\nprint(\"模拟API请求：\")\\nfor i in range(3):\\n    result = simulate_api_request(\"https://api.example.com/data\")\\n    print(f\"请求 {i+1}: {result}\")\\n\\nprint(\"\\\\n=== finally语句的使用 ===")\\n\\n# 6. finally语句的使用\\n# Using finally statement\\ndef process_data_with_cleanup(data):\\n    \"\"\"数据处理，确保清理资源\"\"\"\\n    print(f\"开始处理数据: {data}\")\\n    \\n    try:\\n        if not data:\\n            raise ValueError(\"数据为空\")\\n            \\n        if not isinstance(data, (list, str)):\\n            raise TypeError(\"数据类型不支持\")\\n            \\n        # 模拟数据处理\\n        result = f\"处理完成，数据长度: {len(data)}\"\\n        print(f\"处理成功: {result}\")\\n        return result\\n        \\n    except ValueError as e:\\n        print(f\"数据错误: {e}\")\\n        return None\\n    except TypeError as e:\\n        print(f\"类型错误: {e}\")\\n        return None\\n    finally:\\n        # 无论是否出错都会执行\\n        print(\"清理资源和临时文件\")\\n        print(\"-\" * 30)\\n\\nprint(\"测试数据处理：\")\\ntest_data = [[1, 2, 3], \"\", \"hello\", 123, None]\\nfor data in test_data:\\n    process_data_with_cleanup(data)\\n\\nprint(\"\\\\n=== 自定义异常 ===")\\n\\n# 7. 自定义异常\\n# Custom exceptions\\nclass StudentError(Exception):\\n    \"\"\"学生相关错误\"\"\"\\n    pass\\n\\nclass ScoreError(StudentError):\\n    \"\"\"成绩相关错误\"\"\"\\n    pass\\n\\nclass AgeError(StudentError):\\n    \"\"\"年龄相关错误\"\"\"\\n    pass\\n\\ndef create_student(name, age, score):\\n    \"\"\"创建学生信息\"\"\"\\n    try:\\n        # 验证姓名\\n        if not name or len(name.strip()) == 0:\\n            raise StudentError(\"姓名不能为空\")\\n            \\n        # 验证年龄\\n        if not isinstance(age, int) or age < 6 or age > 25:\\n            raise AgeError(f\"学生年龄应在6-25岁之间，当前: {age}岁\")\\n            \\n        # 验证成绩\\n        if not isinstance(score, (int, float)) or score < 0 or score > 100:\\n            raise ScoreError(f\"成绩应在0-100分之间，当前: {score}分\")\\n            \\n        return {\\n            \"name\": name.strip(),\\n            \"age\": age,\\n            \"score\": score,\\n            \"status\": \"创建成功\"\\n        }\\n        \\n    except AgeError as e:\\n        return {\"error\": f\"年龄错误: {e}\"}\\n    except ScoreError as e:\\n        return {\"error\": f\"成绩错误: {e}\"}\\n    except StudentError as e:\\n        return {\"error\": f\"学生信息错误: {e}\"}\\n    except Exception as e:\\n        return {\"error\": f\"未知错误: {e}\"}\\n\\nprint(\"测试学生创建：\")\\ntest_students = [\\n    (\"张三\", 16, 85),    # 正常\\n    (\"\", 16, 85),       # 姓名为空\\n    (\"李四\", 30, 85),    # 年龄超范围\\n    (\"王五\", 16, 150),   # 成绩超范围\\n    (\"赵六\", 16, 95)     # 正常\\n]\\n\\nfor name, age, score in test_students:\\n    result = create_student(name, age, score)\\n    print(f\"学生({name}, {age}, {score}): {result}\")\\n\\nprint(\"\\\\n=== 错误处理最佳实践 ===")\\nprint(\"1. 具体捕获异常，避免使用裸露的except\")\\nprint(\"2. 记录错误信息，便于调试\")\\nprint(\"3. 优雅降级，提供备选方案\")\\nprint(\"4. 使用finally清理资源\")\\nprint(\"5. 自定义异常，提供更好的错误信息\")\\nprint(\"6. 验证用户输入，防止异常发生\")\\nprint(\"7. 记录日志，便于问题排查\")');
-        
-        addTemplate('10_modules.py', '# 第十课：模块 - 使用Python标准库\\n# Lesson 10: Modules - Using Python Standard Library\\n\\nprint("=== 数学模块 ===")\\nimport math\\n\\nprint(f"圆周率: {math.pi}")\\nprint(f"平方根: {math.sqrt(16)}")\\nprint(f"向上取整: {math.ceil(4.3)}")\\nprint(f"向下取整: {math.floor(4.7)}")\\n\\nprint("\\\\n=== 随机数模块 ===")\\nimport random\\n\\nprint(f"随机数: {random.random()}")\\nprint(f"随机整数: {random.randint(1, 10)}")\\n\\nfruits = [\\\"苹果\\\", \\\"香蕉\\\", \\\"橙子\\\"]\\nprint(f"随机水果: {random.choice(fruits)}")\\n\\nprint("\\\\n=== 日期时间模块 ===")\\nfrom datetime import datetime\\n\\nnow = datetime.now()\\nprint(f"当前时间: {now}")\\nprint(f"格式化: {now.strftime(\\\\\\\"%Y年%m月%d日\\\\\\\")}")\\n\\nprint("\\\\n=== JSON模块 ===")\\nimport json\\n\\ndata = {\\\"姓名\\\": \\\"张三\\\", \\\"年龄\\\": 25}\\njson_str = json.dumps(data, ensure_ascii=False)\\nprint(f"JSON: {json_str}")\\n\\nprint("\\\\n模块让Python功能更强大！")');
-        
-        console.log('Templates loaded with proper formatting:', Object.keys(window.exampleTemplates).length);
+# 这个文件是从应急后备系统加载的
+# This file was loaded from the emergency fallback system
+print("Python编程学习开始了！")
+print("Python programming learning begins!")`;
+            }
+            
+            // Update the exampleFiles array with successfully loaded (or fallback) files
+            window.exampleFiles = Object.keys(window.exampleTemplates);
+            console.log(`📁 Available files: ${window.exampleFiles.length}`);
+            
+            // Update file tree after loading
+            if (window.updateFileTree) {
+                window.updateFileTree();
+                console.log('🌳 File tree updated');
+            } else {
+                console.error('❌ updateFileTree function not available');
+            }
+            
+            // Validate global state
+            console.log('🔍 Global state check:');
+            console.log('  - window.exampleFiles:', window.exampleFiles.length, 'items');
+            console.log('  - window.exampleTemplates:', Object.keys(window.exampleTemplates).length, 'templates');
+            console.log('  - First file content length:', window.exampleTemplates[window.exampleFiles[0]]?.length || 'N/A');
+            
+            return window.exampleTemplates;
+        }
+        // Dynamic template loading will handle welcome.py and all other templates
+        // addTemplate calls removed - using dynamic loading instead
         
         // Templates now loaded safely above
 
@@ -944,30 +1019,159 @@ print("\n开始你的Python学习之旅吧！Let's start your Python learning jo
             document.body.style.cursor = 'default';
         });
 
-        // Initialize file tree immediately on page load with debugging
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOMContentLoaded fired');
-            console.log('exampleFiles available:', !!window.exampleFiles);
-            console.log('exampleTemplates available:', !!window.exampleTemplates);
-            console.log('updateFileTree available:', !!window.updateFileTree);
+        // Initialize templates and file tree on page load
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 DOMContentLoaded fired - initializing application');
             
-            if (window.updateFileTree) {
-                window.updateFileTree();
-                console.log('updateFileTree called');
-            } else {
-                console.error('updateFileTree not available');
-                // Fallback: manually populate file tree
-                setTimeout(function() {
-                    if (window.exampleFiles && window.updateFileTree) {
-                        window.updateFileTree();
-                        console.log('updateFileTree called via fallback');
-                    }
-                }, 1000);
+            // Validate DOM elements are ready
+            const fileTree = document.getElementById('file-tree');
+            if (!fileTree) {
+                console.error('❌ Critical DOM elements not found');
+                return;
+            }
+            
+            console.log('✅ DOM elements validated');
+            
+            try {
+                // Load example files dynamically first
+                console.log('🔄 Starting loadExampleFiles...');
+                await loadExampleFiles();
+                console.log('✅ Example files loaded successfully');
+                
+                // Validate the results
+                if (window.exampleFiles.length === 0) {
+                    console.warn('⚠️ No example files were loaded - entering recovery mode');
+                    await attemptRecovery();
+                }
+                
+            } catch (error) {
+                console.error('❌ Error during initialization:', error);
+                await attemptRecovery();
             }
         });
+        
+        // Recovery function for when dynamic loading fails
+        async function attemptRecovery() {
+            console.log('🔧 Attempting recovery...');
+            
+            // Try loading again after a delay
+            setTimeout(async function() {
+                try {
+                    console.log('🔄 Retry attempt 1...');
+                    await loadExampleFiles();
+                    
+                    if (window.exampleFiles.length > 0) {
+                        console.log('✅ Recovery successful via retry');
+                        return;
+                    }
+                } catch (retryError) {
+                    console.error('❌ Retry failed:', retryError);
+                }
+                
+                // Ultimate fallback: create static templates
+                console.log('🆘 Creating static fallback templates');
+                createStaticFallback();
+                
+            }, 2000);
+        }
+        
+        // Static fallback when all dynamic loading fails
+        function createStaticFallback() {
+            console.log('📝 Creating static template fallbacks');
+            
+            const staticFiles = {
+                'welcome.py': `# Welcome to Python Online IDE!
+# This is a fallback template - server files could not be loaded
+
+print("Welcome to Python!")
+print("This IDE lets you write and run Python code in your browser.")
+print("Try editing this code and clicking 'Run' to see the results!")
+
+# Example: Basic calculations
+x = 10
+y = 5
+print(f"x + y = {x + y}")
+print(f"x * y = {x * y}")`,
+
+                '01_hello_world.py': `# Hello World Example
+# This is a fallback template
+
+print("Hello, World!")
+print("This is your first Python program!")
+
+# Try changing the message below
+message = "Python is awesome!"
+print(message)`,
+
+                '02_variables.py': `# Variables Example
+# This is a fallback template
+
+# Different types of variables
+name = "Alice"
+age = 25
+height = 5.6
+is_student = True
+
+print(f"Name: {name}")
+print(f"Age: {age}")
+print(f"Height: {height} feet")
+print(f"Is student: {is_student}")`
+            };
+            
+            // Create templates
+            Object.entries(staticFiles).forEach(([filename, content]) => {
+                window.exampleTemplates[filename] = content;
+                console.log(`📄 Created static template: ${filename}`);
+            });
+            
+            // Update arrays
+            window.exampleFiles = Object.keys(window.exampleTemplates);
+            
+            // Update UI
+            if (window.updateFileTree) {
+                window.updateFileTree();
+                console.log('🌳 File tree updated with static templates');
+            }
+            
+            console.log(`✅ Static fallback complete: ${window.exampleFiles.length} files available`);
+        }
 
         // Initialize Python when page loads
         initPython();
+        
+        // Debug function to test global state (accessible from browser console)
+        window.debugGlobalState = function() {
+            console.log('=== GLOBAL STATE DEBUG ===');
+            console.log('window.exampleFiles:', window.exampleFiles);
+            console.log('window.exampleFiles.length:', window.exampleFiles ? window.exampleFiles.length : 'undefined');
+            console.log('window.exampleTemplates:', window.exampleTemplates);
+            console.log('window.exampleTemplates keys:', window.exampleTemplates ? Object.keys(window.exampleTemplates) : 'undefined');
+            console.log('window.files:', window.files);
+            console.log('window.files.size:', window.files ? window.files.size : 'undefined');
+            console.log('window.currentFile:', window.currentFile);
+            console.log('window.openTabs:', window.openTabs);
+            console.log('loadExampleFiles function:', typeof loadExampleFiles);
+            console.log('updateFileTree function:', typeof window.updateFileTree);
+            console.log('========================');
+            
+            // Test if the file tree has content
+            const fileTree = document.getElementById('file-tree');
+            if (fileTree) {
+                console.log('File tree DOM children:', fileTree.children.length);
+                console.log('File tree innerHTML length:', fileTree.innerHTML.length);
+            }
+            
+            return {
+                exampleFiles: window.exampleFiles,
+                exampleTemplates: Object.keys(window.exampleTemplates || {}),
+                filesInMemory: window.files ? window.files.size : 0,
+                currentFile: window.currentFile,
+                openTabs: window.openTabs,
+                fileTreeChildren: fileTree ? fileTree.children.length : 0
+            };
+        };
+        
+        console.log('💡 Debug tip: Run window.debugGlobalState() in console to check global state');
     </script>
 </body>
 </html>
