@@ -366,6 +366,16 @@
         let maxOpenTabs = 3;
         let terminalLineCount = 0;
 
+        // Warn if required libraries fail to load
+        setTimeout(() => {
+            if (typeof loadPyodide === 'undefined') {
+                alert('Failed to load Pyodide. Check your network connection.');
+            }
+            if (typeof require === 'undefined') {
+                alert('Failed to load Monaco editor resources. Check your network connection.');
+            }
+        }, 5000);
+
         // Terminal elements
         const terminalOutput = document.getElementById('terminal-output');
         const terminalInput = document.getElementById('terminal-input');
