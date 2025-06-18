@@ -9,6 +9,87 @@
         .error { color: #f44747; }
         .info { color: #dcdcaa; }
         iframe { width: 100%; height: 600px; border: 1px solid #3e3e42; margin-top: 20px; }
+        
+        /* Footer Styles */
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: #252526;
+            border-top: 1px solid #3e3e42;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            font-size: 14px;
+            z-index: 1000;
+        }
+        
+        .footer-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .footer-contact {
+            position: relative;
+            cursor: pointer;
+            color: #4ec9b0;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        
+        .footer-contact:hover {
+            color: #6edbc9;
+        }
+        
+        .qr-tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-bottom: 10px;
+            padding: 10px;
+            background-color: #1e1e1e;
+            border: 1px solid #3e3e42;
+            border-radius: 5px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+            display: none;
+            z-index: 1001;
+        }
+        
+        .qr-tooltip img {
+            width: 150px;
+            height: 150px;
+            display: block;
+        }
+        
+        .footer-contact:hover .qr-tooltip,
+        .footer-contact.active .qr-tooltip {
+            display: block;
+        }
+        
+        .footer-copyright {
+            color: #888;
+        }
+        
+        .footer-icp {
+            color: #4ec9b0;
+            text-decoration: none;
+            transition: color 0.2s;
+        }
+        
+        .footer-icp:hover {
+            color: #6edbc9;
+            text-decoration: underline;
+        }
+        
+        /* Adjust for footer */
+        body {
+            padding-bottom: 60px;
+        }
     </style>
 </head>
 <body>
@@ -101,6 +182,40 @@
         
         // Start test when page loads
         testExamples();
+    </script>
+    
+    <!-- Footer -->
+    <div class="footer">
+        <div class="footer-item">
+            <a href="#" class="footer-contact" id="footer-contact">
+                联系反馈
+                <div class="qr-tooltip">
+                    <img src="https://yunbiyun.com/qiyeweixin.png" alt="企业微信二维码">
+                </div>
+            </a>
+        </div>
+        <div class="footer-item footer-copyright">
+            © 2025 广州云思信息技术有限公司
+        </div>
+        <div class="footer-item">
+            <a href="https://beian.miit.gov.cn" target="_blank" class="footer-icp">粤ICP备19043749号-4</a>
+        </div>
+    </div>
+
+    <script>
+        // Footer contact click handler
+        document.getElementById('footer-contact').addEventListener('click', function(e) {
+            e.preventDefault();
+            this.classList.toggle('active');
+        });
+        
+        // Close QR code when clicking outside
+        document.addEventListener('click', function(e) {
+            const contact = document.getElementById('footer-contact');
+            if (!contact.contains(e.target)) {
+                contact.classList.remove('active');
+            }
+        });
     </script>
 </body>
 </html>
