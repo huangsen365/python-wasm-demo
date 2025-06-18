@@ -2,6 +2,10 @@
 
 A web-based Python development environment with both CLI and full IDE modes, powered by Pyodide (Python compiled to WebAssembly).
 
+## 体验地址
+- 在线 IDE（实时编辑 + 运行）： https://python.yunbiyun.com/editor.html
+- 模拟 Shell（交互式 REPL）： https://python.yunbiyun.com
+
 ## Docker Build and Run Commands
 
 ### Build the Docker image:
