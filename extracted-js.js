@@ -129,7 +129,7 @@ print("\n开始你的Python学习之旅吧！Let's start your Python learning jo
                     return;
                 }
                 
-                require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
+                require.config({ paths: { vs: 'https://cdn-jsdelivr-net.jiasu.yunbiyun.com/npm/monaco-editor@0.45.0/min/vs' } });
                 require(['vs/editor/editor.main'], function() {
                     try {
                         editor = monaco.editor.create(document.getElementById('editor'), {
@@ -324,7 +324,7 @@ print("\n开始你的Python学习之旅吧！Let's start your Python learning jo
                 }
                 
                 pyodide = await loadPyodide({
-                    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.27.7/full/"
+                    indexURL: "https://cdn-jsdelivr-net.jiasu.yunbiyun.com/pyodide/v0.27.7/full/"
                 });
 
                 addTerminalOutput('Pyodide loaded, setting up environment...', 'info');

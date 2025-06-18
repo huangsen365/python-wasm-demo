@@ -89,8 +89,8 @@ The IDE implements several memory optimization strategies:
 
 **CDN Dependencies:**
 Application requires internet access for:
-- Monaco Editor: `https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/`
-- Pyodide: `https://cdn.jsdelivr.net/pyodide/v0.27.7/full/`
+- Monaco Editor: `https://cdn-jsdelivr-net.jiasu.yunbiyun.com/npm/monaco-editor@0.45.0/`
+- Pyodide: `https://cdn-jsdelivr-net.jiasu.yunbiyun.com/pyodide/v0.27.7/full/`
 
 **Common Issues:**
 - "Failed to load Pyodide" indicates network/CDN access problems

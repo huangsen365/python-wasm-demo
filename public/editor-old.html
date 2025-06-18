@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Python Online IDE</title>
-    <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/editor/editor.main.css">
+    <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdn-jsdelivr-net.jiasu.yunbiyun.com/npm/monaco-editor@0.45.0/min/vs/editor/editor.main.css">
     <style>
         * {
             box-sizing: border-box;
@@ -334,8 +334,8 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
-    <script src="https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js"></script>
+    <script src="https://cdn-jsdelivr-net.jiasu.yunbiyun.com/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+    <script src="https://cdn-jsdelivr-net.jiasu.yunbiyun.com/pyodide/v0.27.7/full/pyodide.js"></script>
     <script>
         let pyodide;
         let editor;
@@ -827,7 +827,7 @@ print(f"Happy coding, {name}! 🚀")
         }
 
         // Initialize Monaco Editor
-        require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
+        require.config({ paths: { vs: 'https://cdn-jsdelivr-net.jiasu.yunbiyun.com/npm/monaco-editor@0.45.0/min/vs' } });
         require(['vs/editor/editor.main'], function() {
             editor = monaco.editor.create(document.getElementById('editor'), {
                 value: '',
@@ -853,7 +853,7 @@ print(f"Happy coding, {name}! 🚀")
         async function initPython() {
             try {
                 pyodide = await loadPyodide({
-                    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.27.7/full/"
+                    indexURL: "https://cdn-jsdelivr-net.jiasu.yunbiyun.com/pyodide/v0.27.7/full/"
                 });
 
                 // Set up stdout/stderr capture

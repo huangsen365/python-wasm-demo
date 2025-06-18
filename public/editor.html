@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Python Online IDE</title>
-    <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/editor/editor.main.css">
+    <link rel="stylesheet" data-name="vs/editor/editor.main" href="https://cdn-jsdelivr-net.jiasu.yunbiyun.com/npm/monaco-editor@0.45.0/min/vs/editor/editor.main.css">
     <style>
         * {
             box-sizing: border-box;
@@ -394,8 +394,8 @@
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
-    <script src="https://cdn.jsdelivr.net/pyodide/v0.27.7/full/pyodide.js"></script>
+    <script src="https://cdn-jsdelivr-net.jiasu.yunbiyun.com/npm/monaco-editor@0.45.0/min/vs/loader.js"></script>
+    <script src="https://cdn-jsdelivr-net.jiasu.yunbiyun.com/pyodide/v0.27.7/full/pyodide.js"></script>
     <script>
         // Initialize global variables immediately for testing accessibility
         window.currentFile = null;
@@ -603,7 +603,7 @@ print("Python programming learning begins!")`;
                     return;
                 }
                 
-                require.config({ paths: { vs: 'https://cdn.jsdelivr.net/npm/monaco-editor@0.45.0/min/vs' } });
+                require.config({ paths: { vs: 'https://cdn-jsdelivr-net.jiasu.yunbiyun.com/npm/monaco-editor@0.45.0/min/vs' } });
                 require(['vs/editor/editor.main'], function() {
                     try {
                         editor = monaco.editor.create(document.getElementById('editor'), {
@@ -801,7 +801,7 @@ print("Python programming learning begins!")`;
                 }
                 
                 pyodide = await loadPyodide({
-                    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.27.7/full/"
+                    indexURL: "https://cdn-jsdelivr-net.jiasu.yunbiyun.com/pyodide/v0.27.7/full/"
                 });
 
                 addTerminalOutput('Pyodide loaded, setting up environment...', 'info');
