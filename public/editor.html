@@ -198,7 +198,9 @@
         #terminal {
             flex: 1;
             padding: 10px;
-            overflow-y: auto;
+            /* Always show vertical scroll bar for easier navigation */
+            overflow-y: scroll;
+            overflow-x: hidden;
             font-family: 'Consolas', 'Courier New', monospace;
             font-size: 14px;
             /* Enhanced scroll bar visibility */
@@ -783,9 +785,8 @@ print("Python programming learning begins!")`;
             if (className) line.className = className;
             terminalOutput.appendChild(line);
             
-            // Auto-scroll to show new output
-            const terminal = terminalOutput.parentElement;
-            terminal.scrollTop = terminal.scrollHeight;
+            // Auto-scroll to show new output using helper
+            scrollTerminalToBottom();
             
             terminalLineCount++;
             updateMemoryInfo();
