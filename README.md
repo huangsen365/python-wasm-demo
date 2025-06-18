@@ -74,3 +74,6 @@ docker rm python-wasm-cli
 If the page shows "Failed to load Pyodide" or "Failed to load Monaco editor",
 ensure your browser can access the CDN resources. A working internet
 connection is required when launching the app.
+## 反馈联系
+反馈联系  
+![企业微信](https://yunbiyun.com/qiyeweixin.png)
