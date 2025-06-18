@@ -129,7 +129,7 @@ print("\n开始你的Python学习之旅吧！Let's start your Python learning jo
                     return;
                 }
                 
-                require.config({ paths: { vs: 'https://cdn-jsdelivr-net.jiasu.yunbiyun.com/npm/monaco-editor@0.45.0/min/vs' } });
+                require.config({ paths: { vs: 'https://cdn-jsdelivr-net.jiasu.yunbiyun.com/npm/monaco-editor@0.52.2/min/vs' } });
                 require(['vs/editor/editor.main'], function() {
                     try {
                         editor = monaco.editor.create(document.getElementById('editor'), {
