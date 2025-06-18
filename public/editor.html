@@ -198,8 +198,8 @@
         #terminal {
             flex: 1;
             padding: 10px;
-            /* Always show vertical scroll bar for easier navigation */
-            overflow-y: scroll;
+            /* Show scroll bar when needed for easier navigation */
+            overflow-y: auto;
             overflow-x: hidden;
             font-family: 'Consolas', 'Courier New', monospace;
             font-size: 14px;
@@ -862,6 +862,8 @@ print("Python programming learning begins!")`;
             saveFile();
             
             addTerminalOutput(`\\n>>> Running ${window.currentFile}...`, 'success');
+            // Scroll to the bottom so new output is visible immediately
+            scrollTerminalToBottom();
             
             try {
                 pyodide.FS.writeFile(`/home/user/${window.currentFile}`, code);
