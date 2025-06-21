@@ -82,6 +82,7 @@
             flex: 1;
             display: flex;
             overflow: hidden;
+            min-height: 0;  /* Critical for nested flex layouts */
         }
 
         #sidebar {
@@ -130,6 +131,7 @@
             flex: 1;
             display: flex;
             flex-direction: column;
+            min-height: 0;  /* Allow proper shrinking in nested flex */
         }
 
         #tabs {
@@ -171,10 +173,12 @@
         #editor-container {
             flex: 1;
             display: flex;
+            min-height: 0;  /* Critical for flex shrinking */
         }
 
         #editor {
             flex: 1;
+            min-height: 0;  /* Allow proper shrinking in flex layout */
         }
 
         #terminal-container {
@@ -183,6 +187,9 @@
             border-left: 1px solid #3e3e42;
             display: flex;
             flex-direction: column;
+            min-height: 0;  /* Critical for flex shrinking */
+            position: relative;
+            overflow: hidden;  /* Prevent container itself from scrolling */
         }
 
         #terminal-header {
@@ -196,56 +203,58 @@
         }
 
         #terminal {
-            flex: 1;
+            flex: 1 1 auto;  /* Explicit flex-grow, flex-shrink, flex-basis */
+            min-height: 0;  /* Critical: Allow content to shrink in flex container */
+            max-height: 100%;  /* Limit maximum height */
             padding: 10px;
-            /* Show scroll bar when needed for easier navigation */
+            /* Critical: Enable vertical scrolling */
             overflow-y: auto;
             overflow-x: hidden;
+            position: relative;
             font-family: 'Consolas', 'Courier New', monospace;
             font-size: 14px;
-            /* Enhanced scroll bar visibility */
+            background: #1e1e1e;
+            /* Firefox scrollbar styling */
             scrollbar-width: thin;
-            scrollbar-color: #666 #2d2d30;
+            scrollbar-color: #555 #2d2d2d;
         }
 
-        /* Enhanced scroll bar styling for WebKit browsers (Chrome, Safari, Edge) */
+        /* Custom scrollbar styling for WebKit browsers */
         #terminal::-webkit-scrollbar {
-            width: 14px;
+            width: 12px;
         }
 
         #terminal::-webkit-scrollbar-track {
-            background: #2d2d30;
-            border-radius: 7px;
-            border: 1px solid #3e3e42;
+            background: #2d2d2d;
+            border-radius: 6px;
         }
 
         #terminal::-webkit-scrollbar-thumb {
-            background: #666;
-            border-radius: 7px;
-            border: 2px solid #2d2d30;
-            min-height: 30px;
+            background: #555;
+            border-radius: 6px;
         }
 
         #terminal::-webkit-scrollbar-thumb:hover {
-            background: #888;
-        }
-
-        #terminal::-webkit-scrollbar-thumb:active {
-            background: #999;
-        }
-
-        /* Terminal scroll indicator when content overflows */
-        #terminal {
-            position: relative;
-        }
-
-        #terminal:hover::-webkit-scrollbar-thumb {
             background: #777;
         }
 
+        /* Note: min-height: 0 is now set individually on each element above */
+        
+        /* Terminal output styling */
         #terminal-output {
             white-space: pre-wrap;
             word-wrap: break-word;
+            overflow: visible;  /* Important: only #terminal should handle overflow */
+            min-height: 0;
+            flex-shrink: 0;  /* Prevent content from being compressed */
+            position: relative;
+            color: #d4d4d4;
+            line-height: 1.4;
+            margin-bottom: 10px;
+        }
+        
+        #terminal-output > div {
+            margin-bottom: 2px;
         }
 
         #terminal-input-line {
@@ -691,8 +700,24 @@ print("Python programming learning begins!")`;
         // Templates now loaded safely above
 
         // Initialize Monaco Editor with better error handling
-        function initMonacoEditor() {
+        async function initMonacoEditor() {
             try {
+                // Wait for example files to be loaded first
+                console.log('Waiting for example files before initializing editor...');
+                let attempts = 0;
+                while ((!window.exampleTemplates || Object.keys(window.exampleTemplates).length === 0) && attempts < 50) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                    attempts++;
+                }
+                
+                if (!window.exampleTemplates || Object.keys(window.exampleTemplates).length === 0) {
+                    console.error('Example files not loaded after 5 seconds, using fallback');
+                    createFallbackEditor();
+                    return;
+                }
+                
+                console.log('Example files loaded, initializing Monaco...');
+                
                 if (typeof require === 'undefined') {
                     console.error('RequireJS not loaded, using fallback editor');
                     createFallbackEditor();
@@ -716,7 +741,7 @@ print("Python programming learning begins!")`;
                         // Make editor globally accessible
                         window.editor = editor;
                         
-                        // Load welcome file initially
+                        // Load welcome file initially - now safe because templates are loaded
                         window.loadFile('welcome.py');
                         
                     } catch (error) {
@@ -734,7 +759,7 @@ print("Python programming learning begins!")`;
             }
         }
         
-        function createFallbackEditor() {
+        async function createFallbackEditor() {
             console.log('Creating fallback textarea editor');
             const editorContainer = document.getElementById('editor');
             editorContainer.innerHTML = '<textarea id="fallback-editor" style="width:100%;height:100%;background:#1e1e1e;color:#d4d4d4;border:none;font-family:monospace;font-size:14px;padding:10px;resize:none;"></textarea>';
@@ -752,20 +777,20 @@ print("Python programming learning begins!")`;
             
             console.log('Fallback editor created');
             
-            // Load welcome file
-            window.loadFile('welcome.py');
-        }
-        
-        // Try to initialize Monaco, with fallback after timeout
-        initMonacoEditor();
-        
-        // Fallback timeout if Monaco takes too long
-        setTimeout(() => {
-            if (!window.editor) {
-                console.log('Monaco editor timeout, creating fallback');
-                createFallbackEditor();
+            // Wait for templates to be available before loading welcome file
+            if (window.exampleTemplates && window.exampleTemplates['welcome.py']) {
+                window.loadFile('welcome.py');
+            } else {
+                console.log('Templates not ready, will load welcome.py when available');
+                // Set up a watcher to load when ready
+                const checkInterval = setInterval(() => {
+                    if (window.exampleTemplates && window.exampleTemplates['welcome.py']) {
+                        clearInterval(checkInterval);
+                        window.loadFile('welcome.py');
+                    }
+                }, 500);
             }
-        }, 10000);
+        }
 
         // Replace the early loadFile function with full implementation
         window.loadFile = function loadFile(filename) {
@@ -878,27 +903,65 @@ print("Python programming learning begins!")`;
             
             const line = document.createElement('div');
             line.textContent = text;
-            if (className) line.className = className;
+            line.className = 'output' + (className ? ' ' + className : '');
             terminalOutput.appendChild(line);
             
-            // Auto-scroll to show new output using helper
+            // Scroll to bottom to show new output
             scrollTerminalToBottom();
             
             terminalLineCount++;
             updateMemoryInfo();
+            
+            // Debug logging
+            const terminal = document.getElementById('terminal');
+            if (terminalLineCount % 10 === 0) { // Every 10 lines
+                console.log('Terminal scroll debug:', {
+                    offsetHeight: terminal.offsetHeight,
+                    scrollHeight: terminal.scrollHeight,
+                    clientHeight: terminal.clientHeight,
+                    needsScroll: terminal.scrollHeight > terminal.clientHeight,
+                    computedHeight: window.getComputedStyle(terminal).height,
+                    overflow: window.getComputedStyle(terminal).overflowY
+                });
+            }
         }
 
         async function initPython() {
             try {
                 addTerminalOutput('Initializing Python environment...', 'info');
                 
+                // Add debug logging
+                console.log('Checking Pyodide availability...');
+                console.log('typeof loadPyodide:', typeof loadPyodide);
+                console.log('window.loadPyodide:', window.loadPyodide);
+                
                 if (typeof loadPyodide === 'undefined') {
-                    throw new Error('Pyodide library not loaded. Check internet connection.');
+                    addTerminalOutput('❌ Pyodide library not found', 'error');
+                    addTerminalOutput('Checking CDN accessibility...', 'info');
+                    throw new Error('Pyodide library not loaded. Check internet connection and CDN access.');
                 }
                 
-                pyodide = await loadPyodide({
-                    indexURL: "https://cdn-jsdelivr-net.jiasu.yunbiyun.com/pyodide/v0.27.7/full/"
-                });
+                addTerminalOutput('Loading Pyodide from CDN...', 'info');
+                
+                try {
+                    pyodide = await loadPyodide({
+                        indexURL: "https://cdn-jsdelivr-net.jiasu.yunbiyun.com/pyodide/v0.27.7/full/"
+                    });
+                } catch (cdnError) {
+                    console.error('Primary CDN failed:', cdnError);
+                    addTerminalOutput('Primary CDN failed, trying alternative...', 'warning');
+                    
+                    // Try alternative CDN
+                    try {
+                        pyodide = await loadPyodide({
+                            indexURL: "https://cdn.jsdelivr.net/pyodide/v0.27.7/full/"
+                        });
+                        addTerminalOutput('Loaded from alternative CDN', 'success');
+                    } catch (altError) {
+                        console.error('Alternative CDN also failed:', altError);
+                        throw new Error('Unable to load Pyodide from any CDN');
+                    }
+                }
 
                 addTerminalOutput('Pyodide loaded, setting up environment...', 'info');
 
@@ -958,8 +1021,8 @@ print("Python programming learning begins!")`;
             saveFile();
             
             addTerminalOutput(`\\n>>> Running ${window.currentFile}...`, 'success');
-            // Scroll to the bottom so new output is visible immediately
-            scrollTerminalToBottom();
+            // Force scroll to the bottom when running code
+            scrollTerminalToBottom(true);
             
             try {
                 pyodide.FS.writeFile(`/home/user/${window.currentFile}`, code);
@@ -970,20 +1033,21 @@ print("Python programming learning begins!")`;
             
             addTerminalOutput('');
             
-            // Ensure terminal scrolls to show the latest output
-            scrollTerminalToBottom();
+            // Force scroll to show the latest output after code execution
+            scrollTerminalToBottom(true);
         }
         
         // Helper function to scroll terminal to bottom
-        function scrollTerminalToBottom() {
+        function scrollTerminalToBottom(force = false) {
             const terminal = document.getElementById('terminal');
-            if (terminal) {
+            if (!terminal) return;
+
+            // Check if we're near the bottom (within 20px)
+            const nearBottom = terminal.scrollTop + terminal.clientHeight >= terminal.scrollHeight - 20;
+
+            // Only scroll if forced or if we're already near the bottom
+            if (force || nearBottom) {
                 terminal.scrollTop = terminal.scrollHeight;
-                // Additional smooth scroll for better UX
-                terminal.scrollTo({
-                    top: terminal.scrollHeight,
-                    behavior: 'smooth'
-                });
             }
         }
 
@@ -1172,8 +1236,11 @@ print("Python programming learning begins!")`;
         });
 
         document.addEventListener('mouseup', () => {
-            isResizing = false;
-            document.body.style.cursor = 'default';
+            if (isResizing) {
+                isResizing = false;
+                document.body.style.cursor = 'default';
+                refreshTerminalLayout();  // Refresh layout after resizing
+            }
         });
 
         // Initialize templates and file tree on page load
@@ -1200,6 +1267,14 @@ print("Python programming learning begins!")`;
                     console.warn('⚠️ No example files were loaded - entering recovery mode');
                     await attemptRecovery();
                 }
+                
+                // Now that files are loaded, initialize the editor
+                console.log('🔄 Initializing editor...');
+                await initMonacoEditor();
+                console.log('✅ Editor initialization complete');
+                
+                // Refresh terminal layout after initialization
+                setTimeout(refreshTerminalLayout, 500);
                 
             } catch (error) {
                 console.error('❌ Error during initialization:', error);
@@ -1293,8 +1368,100 @@ print(f"Is student: {is_student}")`
             console.log(`✅ Static fallback complete: ${window.exampleFiles.length} files available`);
         }
 
-        // Initialize Python when page loads
-        initPython();
+        // Test terminal scroll function
+        window.testTerminalScroll = function() {
+            console.log('=== Starting scroll test ===');
+            for(let i = 0; i < 100; i++) {
+                addTerminalOutput(`Test line ${i + 1}: This is a test line with enough text to ensure it takes up some space in the terminal. Testing scrollbar functionality.`);
+            }
+            const terminal = document.getElementById('terminal');
+            console.log('=== Final scroll state ===', {
+                scrollHeight: terminal.scrollHeight,
+                clientHeight: terminal.clientHeight,
+                hasVerticalScroll: terminal.scrollHeight > terminal.clientHeight,
+                scrollbarVisible: terminal.scrollHeight > terminal.offsetHeight
+            });
+        };
+
+        // Force terminal layout refresh
+        function refreshTerminalLayout() {
+            const terminal = document.getElementById('terminal');
+            const terminalContainer = document.getElementById('terminal-container');
+            
+            // Force recalculate height
+            terminal.style.height = '0';
+            const containerHeight = terminalContainer.clientHeight - document.getElementById('terminal-header').offsetHeight;
+            terminal.style.height = '';
+            
+            // Trigger reflow
+            void terminal.offsetHeight;
+            
+            console.log('Terminal layout refreshed');
+        }
+
+        // Visual scrollbar check
+        window.checkScrollbar = function() {
+            const terminal = document.getElementById('terminal');
+            const hasScroll = terminal.scrollHeight > terminal.clientHeight;
+            
+            if (hasScroll) {
+                terminal.style.border = '2px solid green';
+                console.log('✅ Scrollbar should be visible');
+            } else {
+                terminal.style.border = '2px solid red';
+                console.log('❌ No scrollbar needed - adding more content...');
+                // Auto-add more content
+                for(let i = 0; i < 50; i++) {
+                    addTerminalOutput(`Auto-added line ${i + 1} to trigger scrollbar`);
+                }
+            }
+            
+            return {
+                scrollHeight: terminal.scrollHeight,
+                clientHeight: terminal.clientHeight,
+                offsetHeight: terminal.offsetHeight,
+                hasScroll: hasScroll
+            };
+        };
+
+        // Listen for resize
+        window.addEventListener('resize', refreshTerminalLayout);
+
+        // Initialize Python when page loads with error handling
+        window.addEventListener('load', () => {
+            console.log('Window loaded, checking Pyodide script...');
+            
+            // Check if Pyodide script tag exists
+            const pyodideScript = document.querySelector('script[src*="pyodide.js"]');
+            console.log('Pyodide script tag:', pyodideScript);
+            
+            // Wait a bit for script to load, then initialize
+            setTimeout(() => {
+                console.log('Attempting to initialize Python...');
+                initPython().catch(error => {
+                    console.error('Failed to initialize Python:', error);
+                    addTerminalOutput('❌ Failed to initialize Python environment', 'error');
+                    addTerminalOutput('Please check browser console for details', 'error');
+                });
+            }, 1000);
+            
+            // Layout check
+            setTimeout(() => {
+                const terminal = document.getElementById('terminal');
+                const terminalContainer = document.getElementById('terminal-container');
+                console.log('Layout check:', {
+                    terminalContainer: {
+                        height: terminalContainer.offsetHeight,
+                        flex: window.getComputedStyle(terminalContainer).flex
+                    },
+                    terminal: {
+                        height: terminal.offsetHeight,
+                        flex: window.getComputedStyle(terminal).flex,
+                        overflow: window.getComputedStyle(terminal).overflowY
+                    }
+                });
+            }, 2000);
+        });
         
         // Debug function to test global state (accessible from browser console)
         window.debugGlobalState = function() {
@@ -1368,4 +1535,5 @@ print(f"Is student: {is_student}")`
         });
     </script>
 </body>
+
 </html>
