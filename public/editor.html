@@ -91,6 +91,7 @@
             border-right: 1px solid #3e3e42;
             display: flex;
             flex-direction: column;
+            transition: transform 0.3s ease;
         }
 
         #file-explorer {
@@ -174,6 +175,7 @@
             flex: 1;
             display: flex;
             min-height: 0;  /* Critical for flex shrinking */
+            flex-direction: row;  /* Default: horizontal layout */
         }
 
         #editor {
@@ -190,6 +192,7 @@
             min-height: 0;  /* Critical for flex shrinking */
             position: relative;
             overflow: hidden;  /* Prevent container itself from scrolling */
+            transition: width 0.3s ease;
         }
 
         #terminal-header {
@@ -331,10 +334,21 @@
         }
 
         .resize-handle {
-            width: 5px;
             background-color: #3e3e42;
-            cursor: col-resize;
             position: relative;
+        }
+        
+        /* Horizontal resize (default) */
+        .resize-handle.horizontal {
+            width: 5px;
+            cursor: col-resize;
+        }
+        
+        /* Vertical resize (for narrow screens) */
+        .resize-handle.vertical {
+            height: 5px;
+            width: 100%;
+            cursor: row-resize;
         }
 
         .resize-handle:hover {
@@ -441,17 +455,222 @@
         body {
             padding-bottom: 0; /* Footer is fixed, no need for padding */
         }
+
+        /* Mobile menu toggle button */
+        .mobile-menu-toggle {
+            display: none;
+            background: transparent;
+            border: none;
+            color: #cccccc;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px;
+            margin-right: 10px;
+        }
+
+        /* Layout toggle button */
+        .layout-toggle {
+            display: none;
+            background-color: #3e3e42;
+            color: #cccccc;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+
+        .layout-toggle:hover {
+            background-color: #4e4e52;
+        }
+
+        /* Responsive styles */
+        @media (max-width: 1024px) {
+            #sidebar {
+                width: 180px;
+            }
+            
+            #terminal-container {
+                width: 35%;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .mobile-menu-toggle {
+                display: block;
+            }
+            
+            .layout-toggle {
+                display: none;  /* Remove the layout toggle button */
+            }
+            
+            #header h1 {
+                font-size: 16px;
+            }
+            
+            .toolbar {
+                gap: 5px;
+            }
+            
+            .btn {
+                padding: 5px 8px;
+                font-size: 12px;
+            }
+            
+            #sidebar {
+                position: fixed;
+                left: 0;
+                top: 0;
+                height: 100vh;
+                z-index: 999;
+                transform: translateX(-100%);
+                width: 250px;
+            }
+            
+            #sidebar.mobile-open {
+                transform: translateX(0);
+                box-shadow: 2px 0 10px rgba(0,0,0,0.5);
+            }
+            
+            #content {
+                width: 100%;
+            }
+            
+            /* Change to vertical layout on narrow screens */
+            #editor-container {
+                flex-direction: column;
+            }
+            
+            #editor {
+                width: 100% !important;
+                height: 60%;
+                min-height: 200px;
+            }
+            
+            .resize-handle {
+                width: 100% !important;
+                height: 5px !important;
+                cursor: row-resize !important;
+            }
+            
+            #terminal-container {
+                width: 100% !important;
+                height: 40%;
+                min-height: 150px;
+                border-left: none;
+                border-top: 1px solid #3e3e42;
+            }
+            
+            .footer {
+                font-size: 12px;
+                padding: 8px 10px;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+            
+            .footer-item {
+                font-size: 11px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            #header {
+                padding: 8px 10px;
+            }
+            
+            #header h1 {
+                font-size: 14px;
+                display: none;
+            }
+            
+            .btn span.btn-text {
+                display: none;
+            }
+            
+            .btn-icon-only::after {
+                font-family: monospace;
+            }
+            
+            .btn-new::after { content: '+'; }
+            .btn-save::after { content: '💾'; }
+            .btn-run::after { content: '▶'; }
+            .btn-clear::after { content: '🗑'; }
+            .btn-memory::after { content: '🧹'; }
+            
+            #tabs {
+                font-size: 12px;
+            }
+            
+            .tab {
+                padding: 6px 10px;
+            }
+            
+            #terminal {
+                font-size: 12px;
+            }
+            
+            .footer {
+                font-size: 10px;
+                justify-content: center;
+                text-align: center;
+            }
+            
+            .footer-item {
+                font-size: 10px;
+                width: 100%;
+            }
+        }
+
+        /* Overlay for mobile sidebar */
+        .mobile-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            z-index: 998;
+        }
+
+        .mobile-overlay.active {
+            display: block;
+        }
+
+        /* iPad specific adjustments */
+        @media (min-width: 768px) and (max-width: 1024px) and (orientation: portrait) {
+            #sidebar {
+                width: 200px;
+            }
+            
+            #terminal-container {
+                width: 40%;
+            }
+        }
+
+        @media (min-width: 768px) and (max-width: 1024px) and (orientation: landscape) {
+            #header h1 {
+                font-size: 18px;
+            }
+            
+            .btn {
+                padding: 5px 10px;
+            }
+        }
     </style>
 </head>
 <body>
     <div id="header">
+        <button class="mobile-menu-toggle" onclick="toggleMobileSidebar()">☰</button>
         <h1>Python Online IDE</h1>
         <div class="toolbar">
-            <button class="btn" onclick="newFile()">New File</button>
-            <button class="btn" onclick="saveFile()">Save</button>
-            <button class="btn btn-success" onclick="runCode()">▶ Run</button>
-            <button class="btn" onclick="clearTerminal()">Clear Terminal</button>
-            <button class="btn btn-warning" onclick="clearMemory()">Clear Memory</button>
+            <button class="btn btn-new btn-icon-only" onclick="newFile()"><span class="btn-text">New File</span></button>
+            <button class="btn btn-save btn-icon-only" onclick="saveFile()"><span class="btn-text">Save</span></button>
+            <button class="btn btn-success btn-run btn-icon-only" onclick="runCode()"><span class="btn-text">▶ Run</span></button>
+            <button class="btn btn-clear btn-icon-only" onclick="clearTerminal()"><span class="btn-text">Clear Terminal</span></button>
+            <button class="btn btn-warning btn-memory btn-icon-only" onclick="clearMemory()"><span class="btn-text">Clear Memory</span></button>
+            <button class="layout-toggle" onclick="toggleLayout()">Layout</button>
         </div>
     </div>
 
@@ -467,7 +686,7 @@
             <div id="tabs"></div>
             <div id="editor-container">
                 <div id="editor"></div>
-                <div class="resize-handle" id="resize-handle"></div>
+                <div class="resize-handle horizontal" id="resize-handle"></div>
                 <div id="terminal-container">
                     <div id="terminal-header">
                         <span>TERMINAL</span>
@@ -612,7 +831,8 @@
                 '07_functions.py',
                 '08_classes.py',
                 '09_errors.py',
-                '10_modules.py'
+                '10_modules.py',
+                '11_sys_modules.py'
             ];
             
             console.log('🔄 Loading Python example files...');
@@ -1212,26 +1432,55 @@ print("Python programming learning begins!")`;
 
         // Resize handler
         let isResizing = false;
+        let resizeMode = 'horizontal'; // 'horizontal' or 'vertical'
         const resizeHandle = document.getElementById('resize-handle');
         const editorDiv = document.getElementById('editor');
         const terminalContainer = document.getElementById('terminal-container');
+        const editorContainer = document.getElementById('editor-container');
+
+        // Update resize mode based on screen width
+        function updateResizeMode() {
+            if (window.innerWidth <= 768) {
+                resizeMode = 'vertical';
+                resizeHandle.className = 'resize-handle vertical';
+            } else {
+                resizeMode = 'horizontal';
+                resizeHandle.className = 'resize-handle horizontal';
+            }
+        }
 
         resizeHandle.addEventListener('mousedown', (e) => {
             isResizing = true;
-            document.body.style.cursor = 'col-resize';
+            document.body.style.cursor = resizeMode === 'horizontal' ? 'col-resize' : 'row-resize';
+            e.preventDefault();
         });
 
         document.addEventListener('mousemove', (e) => {
             if (!isResizing) return;
             
-            const containerWidth = document.getElementById('editor-container').offsetWidth;
-            const newEditorWidth = e.clientX - editorDiv.offsetLeft;
-            const percentage = (newEditorWidth / containerWidth) * 100;
-            
-            if (percentage > 20 && percentage < 80) {
-                editorDiv.style.width = percentage + '%';
-                terminalContainer.style.width = (100 - percentage) + '%';
-                editor.layout();
+            if (resizeMode === 'horizontal') {
+                const containerWidth = editorContainer.offsetWidth;
+                const newEditorWidth = e.clientX - editorDiv.offsetLeft;
+                const percentage = (newEditorWidth / containerWidth) * 100;
+                
+                if (percentage > 20 && percentage < 80) {
+                    editorDiv.style.width = percentage + '%';
+                    terminalContainer.style.width = (100 - percentage) + '%';
+                    editor.layout();
+                }
+            } else {
+                // Vertical resizing
+                const containerHeight = editorContainer.offsetHeight;
+                const editorTop = editorDiv.getBoundingClientRect().top;
+                const newEditorHeight = e.clientY - editorTop;
+                const percentage = (newEditorHeight / containerHeight) * 100;
+                
+                if (percentage > 20 && percentage < 80) {
+                    editorDiv.style.height = percentage + '%';
+                    terminalContainer.style.height = (100 - percentage) + '%';
+                    editor.layout();
+                    refreshTerminalLayout();
+                }
             }
         });
 
@@ -1239,10 +1488,75 @@ print("Python programming learning begins!")`;
             if (isResizing) {
                 isResizing = false;
                 document.body.style.cursor = 'default';
-                refreshTerminalLayout();  // Refresh layout after resizing
+                editor.layout();
+                refreshTerminalLayout();
+            }
+        });
+        
+        // Touch support for mobile resizing
+        resizeHandle.addEventListener('touchstart', (e) => {
+            isResizing = true;
+            e.preventDefault();
+        });
+        
+        document.addEventListener('touchmove', (e) => {
+            if (!isResizing) return;
+            
+            const touch = e.touches[0];
+            
+            if (resizeMode === 'vertical') {
+                const containerHeight = editorContainer.offsetHeight;
+                const editorTop = editorDiv.getBoundingClientRect().top;
+                const newEditorHeight = touch.clientY - editorTop;
+                const percentage = (newEditorHeight / containerHeight) * 100;
+                
+                if (percentage > 20 && percentage < 80) {
+                    editorDiv.style.height = percentage + '%';
+                    terminalContainer.style.height = (100 - percentage) + '%';
+                    editor.layout();
+                    refreshTerminalLayout();
+                }
+            }
+        });
+        
+        document.addEventListener('touchend', () => {
+            if (isResizing) {
+                isResizing = false;
+                editor.layout();
+                refreshTerminalLayout();
             }
         });
 
+        // Mobile sidebar toggle
+        function toggleMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.querySelector('.mobile-overlay');
+            sidebar.classList.toggle('mobile-open');
+            overlay.classList.toggle('active');
+        }
+        
+        function closeMobileSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.querySelector('.mobile-overlay');
+            sidebar.classList.remove('mobile-open');
+            overlay.classList.remove('active');
+        }
+        
+        // Layout toggle function (no longer needed for mobile)
+        function toggleLayout() {
+            // This function is kept for the button but doesn't do anything on mobile
+            // The layout automatically adjusts based on screen size
+        }
+        
+        // Close sidebar when clicking on a file (mobile)
+        const originalLoadFile = window.loadFile;
+        window.loadFile = function(filename) {
+            if (window.innerWidth <= 768) {
+                closeMobileSidebar();
+            }
+            return originalLoadFile.call(this, filename);
+        };
+        
         // Initialize templates and file tree on page load
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('🚀 DOMContentLoaded fired - initializing application');
@@ -1274,7 +1588,10 @@ print("Python programming learning begins!")`;
                 console.log('✅ Editor initialization complete');
                 
                 // Refresh terminal layout after initialization
-                setTimeout(refreshTerminalLayout, 500);
+                setTimeout(() => {
+                    updateResizeMode();
+                    refreshTerminalLayout();
+                }, 500);
                 
             } catch (error) {
                 console.error('❌ Error during initialization:', error);
@@ -1425,7 +1742,13 @@ print(f"Is student: {is_student}")`
         };
 
         // Listen for resize
-        window.addEventListener('resize', refreshTerminalLayout);
+        window.addEventListener('resize', () => {
+            updateResizeMode();
+            refreshTerminalLayout();
+            if (editor && editor.layout) {
+                editor.layout();
+            }
+        });
 
         // Initialize Python when page loads with error handling
         window.addEventListener('load', () => {
@@ -1497,6 +1820,9 @@ print(f"Is student: {is_student}")`
         
         console.log('💡 Debug tip: Run window.debugGlobalState() in console to check global state');
     </script>
+    
+    <!-- Mobile overlay -->
+    <div class="mobile-overlay" onclick="closeMobileSidebar()"></div>
     
     <!-- Footer -->
     <div class="footer">

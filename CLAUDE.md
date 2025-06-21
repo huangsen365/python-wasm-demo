@@ -23,6 +23,15 @@ docker stop python-wasm-demo && docker rm python-wasm-demo && docker build -t py
 # Test Interface: http://localhost:8080/test_gui.html
 ```
 
+## Docker Management Shortcuts
+
+- Use a single command to stop, remove, rebuild, and restart the Docker container for quick iterations
+- The comprehensive rebuild command combines multiple Docker operations for efficiency
+
+## Workflow Memories
+
+- Use `docker stop python-wasm-demo && docker rm python-wasm-demo && docker build -t python-wasm-demo . && docker run -d --name python-wasm-demo -p 8080:80 python-wasm-demo` to quickly stop, remove, rebuild, and restart the Docker container
+
 ## Architecture Overview
 
 This is a browser-based Python development environment using Python compiled to WebAssembly (Pyodide). The entire application runs client-side with no backend server.
