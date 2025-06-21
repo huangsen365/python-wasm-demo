@@ -10,7 +10,7 @@ print("欢迎来到Python世界")  # Welcome to Python world
 print("Welcome to Python world")
 
 # 你可以打印数字 - You can print numbers
-print(2024)
+print(2025)
 print(42)
 
 # 数学运算 - Math operations
