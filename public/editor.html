@@ -286,14 +286,51 @@
 
         .error {
             color: #f44747;
+            font-weight: 500;
         }
 
         .success {
             color: #4ec9b0;
+            font-weight: 500;
         }
 
         .output {
             color: #cccccc;
+        }
+        
+        .info {
+            color: #3794ff;
+        }
+        
+        .warning {
+            color: #ff9500;
+        }
+        
+        .command {
+            color: #569cd6;
+            font-weight: 500;
+        }
+        
+        .running {
+            color: #4ec9b0;
+            font-weight: bold;
+            background: rgba(78, 201, 176, 0.1);
+            padding: 2px 8px;
+            border-radius: 3px;
+            margin: 2px 0;
+        }
+        
+        .prompt {
+            color: #c586c0;
+            font-weight: bold;
+        }
+        
+        /* Special styling for Python print output */
+        .python-output {
+            color: #ce9178;
+            background: rgba(206, 145, 120, 0.05);
+            padding-left: 20px;
+            border-left: 3px solid rgba(206, 145, 120, 0.3);
         }
 
         .modal {
@@ -735,6 +772,7 @@
         let maxTerminalLines = 500;
         let maxOpenTabs = 3;
         let terminalLineCount = 0;
+        let debugMode = false; // Toggle this to enable/disable debug logging
         
         // Initialize functions immediately for testing (proper implementation follows)
         window.loadFile = function(filename) {
@@ -1108,7 +1146,7 @@ print("Python programming learning begins!")`;
             
             updateTabs();
             updateMemoryInfo();
-            addTerminalOutput('Memory cleared!', 'success');
+            addTerminalOutput('✨ Memory cleared!', 'success');
         }
 
         function addTerminalOutput(text, className = '') {
@@ -1124,6 +1162,10 @@ print("Python programming learning begins!")`;
             const line = document.createElement('div');
             line.textContent = text;
             line.className = 'output' + (className ? ' ' + className : '');
+            // Ensure empty lines have height for proper spacing
+            if (text === '') {
+                line.innerHTML = '&nbsp;'; // Non-breaking space to maintain line height
+            }
             terminalOutput.appendChild(line);
             
             // Scroll to bottom to show new output
@@ -1132,17 +1174,19 @@ print("Python programming learning begins!")`;
             terminalLineCount++;
             updateMemoryInfo();
             
-            // Debug logging
-            const terminal = document.getElementById('terminal');
-            if (terminalLineCount % 10 === 0) { // Every 10 lines
-                console.log('Terminal scroll debug:', {
-                    offsetHeight: terminal.offsetHeight,
-                    scrollHeight: terminal.scrollHeight,
-                    clientHeight: terminal.clientHeight,
-                    needsScroll: terminal.scrollHeight > terminal.clientHeight,
-                    computedHeight: window.getComputedStyle(terminal).height,
-                    overflow: window.getComputedStyle(terminal).overflowY
-                });
+            // Debug logging (controlled by debugMode flag)
+            if (debugMode) {
+                const terminal = document.getElementById('terminal');
+                if (terminalLineCount % 10 === 0) { // Every 10 lines
+                    console.log('Terminal scroll debug:', {
+                        offsetHeight: terminal.offsetHeight,
+                        scrollHeight: terminal.scrollHeight,
+                        clientHeight: terminal.clientHeight,
+                        needsScroll: terminal.scrollHeight > terminal.clientHeight,
+                        computedHeight: window.getComputedStyle(terminal).height,
+                        overflow: window.getComputedStyle(terminal).overflowY
+                    });
+                }
             }
         }
 
@@ -1240,7 +1284,8 @@ print("Python programming learning begins!")`;
             const code = editor.getValue();
             saveFile();
             
-            addTerminalOutput(`\\n>>> Running ${window.currentFile}...`, 'success');
+            addTerminalOutput(''); // Add a blank line for separation
+            addTerminalOutput(`▶️ Running ${window.currentFile}...`, 'running');
             // Force scroll to the bottom when running code
             scrollTerminalToBottom(true);
             
@@ -1272,7 +1317,7 @@ print("Python programming learning begins!")`;
         }
 
         async function executeTerminalCommand(command) {
-            addTerminalOutput('>>> ' + command);
+            addTerminalOutput('>>> ' + command, 'command');
             
             try {
                 if (command.trim() === 'clear') {
@@ -1281,8 +1326,12 @@ print("Python programming learning begins!")`;
                 }
                 
                 if (command.trim() === 'ls') {
-                    const fileList = Array.from(window.files.keys()).join('\\n');
-                    addTerminalOutput(fileList || 'No files loaded');
+                    const files = Array.from(window.files.keys());
+                    if (files.length === 0) {
+                        addTerminalOutput('No files loaded');
+                    } else {
+                        files.forEach(file => addTerminalOutput(file));
+                    }
                     return;
                 }
                 
@@ -1330,7 +1379,7 @@ print("Python programming learning begins!")`;
         function saveFile() {
             if (window.currentFile) {
                 window.files.set(window.currentFile, editor.getValue());
-                addTerminalOutput(`Saved ${window.currentFile}`, 'success');
+                addTerminalOutput(`💾 Saved ${window.currentFile}`, 'success');
                 
                 if (pyodide) {
                     try {
@@ -1818,7 +1867,30 @@ print(f"Is student: {is_student}")`
             };
         };
         
-        console.log('💡 Debug tip: Run window.debugGlobalState() in console to check global state');
+        // Debug mode control functions
+        window.enableDebug = function() {
+            debugMode = true;
+            console.log('✅ Debug mode ENABLED - Terminal scroll debug messages will appear every 10 lines');
+            return 'Debug mode is now ON';
+        };
+        
+        window.disableDebug = function() {
+            debugMode = false;
+            console.log('❌ Debug mode DISABLED - Terminal scroll debug messages will not appear');
+            return 'Debug mode is now OFF';
+        };
+        
+        window.toggleDebug = function() {
+            debugMode = !debugMode;
+            console.log(debugMode ? '✅ Debug mode ENABLED' : '❌ Debug mode DISABLED');
+            return `Debug mode is now ${debugMode ? 'ON' : 'OFF'}`;
+        };
+        
+        console.log('💡 Debug tips:');
+        console.log('   - window.enableDebug()  : Turn on debug mode');
+        console.log('   - window.disableDebug() : Turn off debug mode');
+        console.log('   - window.toggleDebug()  : Toggle debug mode');
+        console.log('   - window.debugGlobalState() : Check global state');
     </script>
     
     <!-- Mobile overlay -->
